@@ -83,6 +83,17 @@ async def preview_lead_page(request: Request, slug: str):
     lead = find_lead_by_slug_or_id(slug, db)
 
     if not lead:
+        # Fallback to pre-generated static HTML file in public_demos
+        static_html = PROJECT_ROOT / "public_demos" / "preview" / f"{slug}.html"
+        static_index = PROJECT_ROOT / "public_demos" / "preview" / slug / "index.html"
+        
+        if static_html.exists():
+            logger.info(f"Serving static pre-generated preview file: '{static_html}'")
+            return HTMLResponse(content=static_html.read_text(encoding="utf-8"))
+        elif static_index.exists():
+            logger.info(f"Serving static pre-generated index file: '{static_index}'")
+            return HTMLResponse(content=static_index.read_text(encoding="utf-8"))
+
         logger.warning(f"Demo preview page requested for unknown slug: '{slug}'")
         raise HTTPException(status_code=404, detail=f"Preview page for '{slug}' not found.")
 
