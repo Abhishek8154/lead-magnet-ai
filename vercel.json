@@ -1,10 +1,6 @@
 {
   "rewrites": [
     {
-      "source": "/preview/:slug",
-      "destination": "/public_demos/preview/:slug.html"
-    },
-    {
       "source": "/(.*)",
       "destination": "/api/index.py"
     }
