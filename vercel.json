@@ -1,15 +1,6 @@
 {
-  "functions": {
-    "api/index.py": {
-      "includeFiles": "public_demos/**"
-    }
-  },
-  "rewrites": [
-    {
-      "source": "/(.*)",
-      "destination": "/api/index.py"
-    }
-  ],
+  "cleanUrls": true,
+  "trailingSlash": false,
   "crons": [
     {
       "path": "/api/cron/followups",
