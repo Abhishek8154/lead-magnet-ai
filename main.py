@@ -21,6 +21,12 @@ from utils.error_handler import log_error
 
 logger = get_logger("Orchestrator")
 
+# Expose top-level FastAPI app instance for Vercel deployment
+try:
+    from web.app import app
+except Exception:
+    app = None
+
 
 def run_pipeline(city: str, business_type: str, max_leads: int, interactive: bool = True):
     """Executes the complete Lead Magnet AI pipeline end-to-end."""
