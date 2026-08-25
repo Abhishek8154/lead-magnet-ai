@@ -82,5 +82,43 @@ def export_all_static_demos(output_dir: Optional[Path] = None):
     return exported_count
 
 
+def export_and_publish_demos_to_github(leads: Optional[List[Lead]] = None):
+    """
+    Renders static demo HTML files to both docs/ and public/ directories,
+    and automatically pushes them to GitHub in the background so they are
+    instantly live on GitHub Pages 24/7.
+    """
+    import subprocess
+    import threading
+
+    docs_dir = PROJECT_ROOT / "docs"
+    public_dir = PROJECT_ROOT / "public"
+    public_demos_dir = PROJECT_ROOT / "public_demos"
+
+    export_all_static_demos(docs_dir)
+    export_all_static_demos(public_dir)
+    export_all_static_demos(public_demos_dir)
+
+    def _bg_push():
+        try:
+            logger.info("Auto-syncing newly generated client demo pages to GitHub...")
+            subprocess.run(["git", "add", "docs", "public", "public_demos"], cwd=str(PROJECT_ROOT), check=True, capture_output=True)
+            commit_res = subprocess.run(["git", "commit", "-m", "Auto-publish new client demo websites to GitHub Pages"], cwd=str(PROJECT_ROOT), capture_output=True)
+            if commit_res.returncode == 0:
+                push_res = subprocess.run(["git", "push", "origin", "main"], cwd=str(PROJECT_ROOT), capture_output=True, timeout=60)
+                if push_res.returncode == 0:
+                    logger.info("Successfully published new client demo websites to GitHub Pages 24/7!")
+                else:
+                    logger.warning(f"Git push warning: {push_res.stderr.decode('utf-8', errors='ignore')}")
+            else:
+                logger.info("No new demo file changes to commit.")
+        except Exception as err:
+            logger.warning(f"Background GitHub auto-publish error: {err}")
+
+    t = threading.Thread(target=_bg_push, daemon=True)
+    t.start()
+
+
 if __name__ == "__main__":
     export_all_static_demos()
+

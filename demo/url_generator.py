@@ -44,10 +44,12 @@ def process_demo_urls(
 
     # Initialize FastAPI TestClient for in-process HTTP verification
     test_client = TestClient(app)
+    is_gh_pages = "github.io" in target_base.lower()
 
     for idx, lead in enumerate(leads, 1):
         slug = generate_slug(lead.business_name, lead.city)
-        demo_url = f"{target_base}/{slug}"
+        ext = ".html" if is_gh_pages else ""
+        demo_url = f"{target_base}/{slug}{ext}"
         fallback_url = f"{target_base}?lead_id={lead.lead_id}"
 
         logger.info(f"[{idx}/{len(leads)}] Generated slug '{slug}' for '{lead.business_name}'. URL: {demo_url}")
@@ -116,5 +118,13 @@ def process_demo_urls(
             "whatsapp_message": lead.whatsapp_message
         })
 
-    logger.info("Demo URL generation and verification batch completed.")
+    # Automatically render static HTML and push to GitHub Pages in the background
+    try:
+        from demo.export_static_demos import export_and_publish_demos_to_github
+        export_and_publish_demos_to_github(leads=leads)
+    except Exception as e:
+        logger.warning(f"Could not auto-publish static demos to GitHub: {e}")
+
+    logger.info("Demo URL generation, static export, and cloud publishing batch completed.")
     return results
+
