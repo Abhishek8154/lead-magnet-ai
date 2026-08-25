@@ -225,7 +225,23 @@ def approve_lead(lead_id: str):
             
             phone = format_whatsapp_phone(lead.phone)
             if phone:
-                text = lead.whatsapp_message or f"Hi {lead.business_name}, check your personalized website demo here: {lead.demo_url}"
+                demo_link = lead.demo_url or ""
+                if "trycloudflare.com" in demo_link or not demo_link:
+                    from demo.server import generate_slug
+                    slug = generate_slug(lead.business_name, lead.city)
+                    target_base = config.DEMO_BASE_URL.rstrip("/")
+                    demo_link = f"{target_base}/{slug}"
+                    lead.demo_url = demo_link
+                    db.upsert_lead(lead)
+
+                text = lead.whatsapp_message or f"Hi {lead.business_name}, check your personalized website demo here: {demo_link}"
+                # Replace placeholders
+                text = text.replace("{{DEMO_URL}}", demo_link).replace("{DEMO_URL}", demo_link)
+                # Replace legacy trycloudflare links if any remain
+                import re
+                text = re.sub(r'https?://[a-zA-Z0-9-]+\.trycloudflare\.com/preview[^\s]*', demo_link, text)
+                if demo_link and demo_link not in text:
+                    text += f"\n👉 {demo_link}"
                 wa_url = f"https://api.whatsapp.com/send?phone={phone}&text={urllib.parse.quote(text)}"
 
         return {"status": "success", "message": msg, "whatsapp_url": wa_url}

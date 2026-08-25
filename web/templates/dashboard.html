@@ -1878,7 +1878,11 @@
         function generateFallbackMessages(lead) {
             const name = lead.business_name || 'Business';
             const city = lead.city || 'your city';
-            const demoUrl = lead.demo_url || `http://localhost:8000/preview/${name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${city.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
+            const slug = `${name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${city.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
+            let demoUrl = lead.demo_url || `https://lead-magnet-ai-six.vercel.app/preview/${slug}`;
+            if (demoUrl.includes('trycloudflare.com') || demoUrl.includes('localhost:8000')) {
+                demoUrl = `https://lead-magnet-ai-six.vercel.app/preview/${slug}`;
+            }
             const ws = (lead.website_status || '').toUpperCase();
 
             let emailMsg = "";
@@ -1905,11 +1909,15 @@
             if (!digits) return "";
             
             const fallback = generateFallbackMessages(lead);
-            const demoLinkUrl = lead.demo_url || fallback.demoUrl;
+            let demoLinkUrl = lead.demo_url || fallback.demoUrl;
+            if (demoLinkUrl.includes('trycloudflare.com') || demoLinkUrl.includes('localhost:8000')) {
+                demoLinkUrl = fallback.demoUrl;
+            }
             let waText = lead.whatsapp_message && lead.whatsapp_message.length > 5 ? lead.whatsapp_message : fallback.waMsg;
             
             // Clean placeholders and ensure demo URL is inside WhatsApp message
             waText = waText.replace(/\{\{DEMO_URL\}\}/g, demoLinkUrl).replace(/\{DEMO_URL\}/g, demoLinkUrl);
+            waText = waText.replace(/https?:\/\/[a-zA-Z0-9-]+\.trycloudflare\.com\/preview[^\s]*/g, demoLinkUrl);
             if (!waText.includes(demoLinkUrl)) {
                 waText += ` Preview here: ${demoLinkUrl}`;
             }

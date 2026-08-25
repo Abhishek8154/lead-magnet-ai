@@ -80,7 +80,21 @@ def send_approved_whatsapp_messages(
 
         now_iso = datetime.now(timezone.utc).isoformat()
         phone_formatted = format_whatsapp_phone(lead.phone)
-        msg_body = lead.whatsapp_message or f"Hi {lead.business_name}, check your demo here: {lead.demo_url}"
+
+        demo_link = lead.demo_url or ""
+        if "trycloudflare.com" in demo_link or not demo_link:
+            from demo.server import generate_slug
+            slug = generate_slug(lead.business_name, lead.city)
+            target_base = config.DEMO_BASE_URL.rstrip("/")
+            demo_link = f"{target_base}/{slug}"
+            lead.demo_url = demo_link
+
+        msg_body = lead.whatsapp_message or f"Hi {lead.business_name}, check your demo here: {demo_link}"
+        msg_body = msg_body.replace("{{DEMO_URL}}", demo_link).replace("{DEMO_URL}", demo_link)
+        import re
+        msg_body = re.sub(r'https?://[a-zA-Z0-9-]+\.trycloudflare\.com/preview[^\s]*', demo_link, msg_body)
+        if demo_link and demo_link not in msg_body:
+            msg_body += f"\n👉 {demo_link}"
 
         # --- DRY RUN MODE ---
         if config.DRY_RUN:
