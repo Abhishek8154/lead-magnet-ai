@@ -30,7 +30,10 @@ app.add_api_route("/preview", preview_fallback_page, methods=["GET"], response_c
 BASE_DIR = Path(__file__).resolve().parent
 templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
 db = Database()
-db.init_db()
+try:
+    db.init_db()
+except Exception as e:
+    print(f"[DB INIT WARNING] Could not initialize database on module load: {e}")
 
 
 @app.get("/", response_class=HTMLResponse)
