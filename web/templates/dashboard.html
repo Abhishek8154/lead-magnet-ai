@@ -1879,9 +1879,9 @@
             const name = lead.business_name || 'Business';
             const city = lead.city || 'your city';
             const slug = `${name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${city.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
-            let demoUrl = lead.demo_url || `https://lead-magnet-ai-six.vercel.app/preview/${slug}`;
+            let demoUrl = lead.demo_url || `https://abhishek8154.github.io/lead-magnet-ai/preview/${slug}.html`;
             if (demoUrl.includes('trycloudflare.com') || demoUrl.includes('localhost:8000')) {
-                demoUrl = `https://lead-magnet-ai-six.vercel.app/preview/${slug}`;
+                demoUrl = `https://abhishek8154.github.io/lead-magnet-ai/preview/${slug}.html`;
             }
             const ws = (lead.website_status || '').toUpperCase();
 
