@@ -1,0 +1,10 @@
+.env
+leads.db
+google_creds.json
+cloudflared.exe
+*.exe
+__pycache__/
+*.pyc
+.idea/
+.vscode/
+errors.log

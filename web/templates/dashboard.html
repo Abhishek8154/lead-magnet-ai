@@ -1,0 +1,2703 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LeadHunter.AI — B2B Prospect Automation Pipeline</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #07090e;
+            --sidebar-bg: #0b0e14;
+            --card-bg: rgba(15, 23, 42, 0.75);
+            --card-border: rgba(255, 255, 255, 0.07);
+            --accent-orange: #f97316;
+            --accent-orange-hover: #ea580c;
+            --accent-glow: rgba(249, 115, 22, 0.25);
+            --hot: #ef4444;
+            --warm: #f59e0b;
+            --low: #10b981;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+        }
+
+        /* Top Header Bar */
+        header.top-header {
+            height: 64px;
+            background: rgba(11, 14, 20, 0.95);
+            backdrop-filter: blur(16px);
+            border-bottom: 1px solid var(--card-border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 1.5rem;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .brand-logo {
+            font-size: 1.35rem;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        .brand-logo span.orange {
+            color: var(--accent-orange);
+        }
+
+        .badge-version {
+            background: rgba(249, 115, 22, 0.15);
+            color: var(--accent-orange);
+            border: 1px solid rgba(249, 115, 22, 0.3);
+            font-size: 0.7rem;
+            font-weight: 700;
+            padding: 0.15rem 0.5rem;
+            border-radius: 4px;
+            text-transform: uppercase;
+        }
+
+        .header-center {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            background: rgba(255, 255, 255, 0.03);
+            padding: 0.4rem 1rem;
+            border-radius: 8px;
+            border: 1px solid var(--card-border);
+        }
+
+        .input-group-inline {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        .input-group-inline input {
+            background: transparent;
+            border: none;
+            color: white;
+            font-weight: 600;
+            font-size: 0.85rem;
+            outline: none;
+            width: 110px;
+        }
+
+        /* City Selector Dropdown */
+        .city-dropdown-wrapper {
+            position: relative;
+        }
+
+        .city-trigger {
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.12);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 0.85rem;
+            padding: 0.3rem 0.7rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            white-space: nowrap;
+            min-width: 140px;
+            justify-content: space-between;
+            transition: all 0.2s ease;
+        }
+
+        .city-trigger:hover {
+            border-color: rgba(99, 102, 241, 0.6);
+            background: rgba(99, 102, 241, 0.08);
+        }
+
+        .city-trigger .caret {
+            font-size: 0.6rem;
+            opacity: 0.6;
+            margin-left: 4px;
+        }
+
+        .city-dropdown-menu {
+            display: none;
+            position: absolute;
+            top: calc(100% + 6px);
+            left: 0;
+            z-index: 9999;
+            background: #0f1117;
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            padding: 0.65rem;
+            min-width: 290px;
+            max-width: 330px;
+            box-shadow: 0 12px 40px rgba(0,0,0,0.75);
+        }
+
+        .city-dropdown-menu.open {
+            display: block;
+        }
+
+        .city-search-box {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.12);
+            border-radius: 8px;
+            padding: 0.35rem 0.65rem;
+            margin-bottom: 0.55rem;
+        }
+
+        .city-search-box input {
+            background: transparent;
+            border: none;
+            color: #fff;
+            font-size: 0.82rem;
+            outline: none;
+            width: 100%;
+        }
+
+        .city-quick-section {
+            margin-bottom: 0.55rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid var(--card-border);
+        }
+
+        .city-section-label {
+            display: block;
+            font-size: 0.68rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.35rem;
+        }
+
+        .city-pills {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.3rem;
+        }
+
+        .city-pill {
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: var(--text-secondary);
+            font-size: 0.72rem;
+            padding: 0.2rem 0.5rem;
+            border-radius: 9999px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .city-pill:hover, .city-pill.active {
+            background: rgba(99, 102, 241, 0.25);
+            color: #a5b4fc;
+            border-color: rgba(99, 102, 241, 0.5);
+        }
+
+        .city-list-scrollable {
+            max-height: 230px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            padding-right: 0.25rem;
+        }
+
+        .city-list-scrollable::-webkit-scrollbar {
+            width: 5px;
+        }
+        .city-list-scrollable::-webkit-scrollbar-thumb {
+            background: rgba(255,255,255,0.2);
+            border-radius: 4px;
+        }
+
+        .city-group-header {
+            font-size: 0.7rem;
+            font-weight: 700;
+            color: #94a3b8;
+            padding: 0.25rem 0.4rem;
+            border-radius: 4px;
+            background: rgba(255,255,255,0.03);
+            margin-bottom: 0.2rem;
+        }
+
+        .city-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.35rem 0.55rem;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+
+        .city-item:hover {
+            background: rgba(99, 102, 241, 0.2);
+            color: #fff;
+        }
+
+        .city-item small {
+            font-size: 0.68rem;
+            color: var(--text-muted);
+        }
+
+        .city-custom-hint {
+            display: none;
+            padding: 0.4rem 0.6rem;
+            background: rgba(99, 102, 241, 0.15);
+            border: 1px dashed rgba(99, 102, 241, 0.4);
+            border-radius: 6px;
+            font-size: 0.78rem;
+            color: #c7d2fe;
+            cursor: pointer;
+            margin-bottom: 0.4rem;
+        }
+
+        /* Multi-select Category Dropdown */
+        .category-dropdown-wrapper {
+            position: relative;
+        }
+
+        .category-trigger {
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.12);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 0.85rem;
+            padding: 0.3rem 0.7rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            white-space: nowrap;
+            min-width: 160px;
+            justify-content: space-between;
+            transition: border-color 0.2s;
+        }
+
+        .category-trigger:hover {
+            border-color: rgba(251,191,36,0.5);
+        }
+
+        .category-trigger .caret {
+            font-size: 0.6rem;
+            opacity: 0.6;
+            margin-left: 4px;
+        }
+
+        .category-dropdown-menu {
+            display: none;
+            position: absolute;
+            top: calc(100% + 6px);
+            left: 0;
+            z-index: 9999;
+            background: #0f1117;
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            padding: 0.5rem;
+            min-width: 220px;
+            box-shadow: 0 12px 40px rgba(0,0,0,0.6);
+        }
+
+        .category-dropdown-menu.open {
+            display: block;
+        }
+
+        .cat-option {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            padding: 0.5rem 0.7rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.82rem;
+            color: var(--text-secondary);
+            transition: background 0.15s;
+        }
+
+        .cat-option:hover {
+            background: rgba(255,255,255,0.06);
+            color: var(--text-primary);
+        }
+
+        .cat-option input[type="checkbox"] {
+            width: 14px;
+            height: 14px;
+            accent-color: #fbbf24;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+
+        .cat-option.selected {
+            color: #fbbf24;
+        }
+
+        .cat-dropdown-footer {
+            border-top: 1px solid var(--card-border);
+            padding: 0.5rem 0.7rem 0.2rem;
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 0.3rem;
+        }
+
+        .cat-btn-select-all, .cat-btn-clear {
+            font-size: 0.72rem;
+            padding: 0.25rem 0.6rem;
+            border-radius: 6px;
+            cursor: pointer;
+            border: 1px solid var(--card-border);
+            background: transparent;
+            color: var(--text-muted);
+            transition: all 0.15s;
+        }
+
+        .cat-btn-select-all:hover { color: #fbbf24; border-color: #fbbf24; }
+        .cat-btn-clear:hover { color: #f87171; border-color: #f87171; }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .mode-switch-group {
+            display: inline-flex;
+            background: rgba(11, 14, 20, 0.9);
+            border: 1px solid var(--card-border);
+            border-radius: 9999px;
+            padding: 3px;
+            gap: 3px;
+        }
+
+        .mode-switch-btn {
+            border: 1px solid transparent;
+            background: transparent;
+            font-weight: 800;
+            font-size: 0.75rem;
+            padding: 0.4rem 0.85rem;
+            border-radius: 9999px;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            color: var(--text-muted);
+        }
+
+        .mode-switch-btn.active-dry {
+            background: rgba(16, 185, 129, 0.2);
+            color: #10b981;
+            border-color: rgba(16, 185, 129, 0.5);
+            box-shadow: 0 0 12px rgba(16, 185, 129, 0.25);
+        }
+
+        .mode-switch-btn.active-live {
+            background: rgba(239, 68, 68, 0.25);
+            color: #f87171;
+            border-color: rgba(239, 68, 68, 0.6);
+            box-shadow: 0 0 15px rgba(239, 68, 68, 0.4);
+            animation: pulse-live 2s infinite;
+        }
+
+        .mode-switch-btn.inactive {
+            opacity: 0.5;
+        }
+
+        .mode-switch-btn.inactive:hover {
+            opacity: 0.95;
+            color: white;
+        }
+
+        @keyframes pulse-live {
+            0% { box-shadow: 0 0 10px rgba(239, 68, 68, 0.3); }
+            50% { box-shadow: 0 0 20px rgba(239, 68, 68, 0.6); }
+            100% { box-shadow: 0 0 10px rgba(239, 68, 68, 0.3); }
+        }
+
+        .btn-run-full {
+            background: linear-gradient(135deg, #f97316, #ea580c);
+            color: white;
+            font-weight: 700;
+            font-size: 0.85rem;
+            padding: 0.55rem 1.25rem;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            box-shadow: 0 0 15px var(--accent-glow);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-run-full:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 0 25px rgba(249, 115, 22, 0.4);
+        }
+
+        /* App Wrapper with Sidebar & Main Layout */
+        .app-layout {
+            display: flex;
+            flex: 1;
+        }
+
+        /* Sidebar Navigation */
+        aside.sidebar {
+            width: 240px;
+            background: var(--sidebar-bg);
+            border-right: 1px solid var(--card-border);
+            padding: 1.5rem 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.75rem;
+            flex-shrink: 0;
+        }
+
+        .nav-section-title {
+            font-size: 0.7rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            margin-bottom: 0.6rem;
+            padding-left: 0.5rem;
+        }
+
+        .nav-menu {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 0.35rem;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.65rem 0.85rem;
+            border-radius: 8px;
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-decoration: none;
+        }
+
+        .nav-item:hover, .nav-item.active {
+            background: rgba(249, 115, 22, 0.12);
+            color: white;
+            border-left: 3px solid var(--accent-orange);
+        }
+
+        .nav-badge {
+            margin-left: auto;
+            background: var(--accent-orange);
+            color: white;
+            font-size: 0.7rem;
+            font-weight: 800;
+            padding: 0.15rem 0.5rem;
+            border-radius: 9999px;
+        }
+
+        /* Main Content Container */
+        main.main-content {
+            flex: 1;
+            padding: 1.75rem 2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+            overflow-y: auto;
+        }
+
+        /* Tab Content Pages */
+        .tab-content {
+            display: none;
+            flex-direction: column;
+            gap: 1.75rem;
+        }
+
+        .tab-content.active {
+            display: flex;
+        }
+
+        /* Section Header */
+        .content-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+        }
+
+        .content-title-box h1 {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: white;
+            letter-spacing: -0.02em;
+        }
+
+        .content-title-box p {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            margin-top: 0.25rem;
+        }
+
+        .btn-refresh {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--card-border);
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+            font-weight: 600;
+            padding: 0.45rem 0.85rem;
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        .btn-refresh:hover {
+            color: white;
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        /* Metrics Cards Grid */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 1rem;
+        }
+
+        .metric-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            padding: 1.15rem 1.25rem;
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+            cursor: pointer;
+        }
+
+        .metric-card:hover {
+            transform: translateY(-4px) scale(1.02);
+            border-color: #38bdf8;
+            box-shadow: 0 8px 25px rgba(56, 189, 248, 0.25);
+        }
+
+        .metric-card.active-filter {
+            border-color: #38bdf8 !important;
+            background: rgba(15, 23, 42, 0.95);
+            box-shadow: 0 0 20px rgba(56, 189, 248, 0.4) !important;
+        }
+
+        .metric-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: var(--accent-orange);
+            opacity: 0.3;
+        }
+
+        .metric-label {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .metric-value {
+            font-size: 2.1rem;
+            font-weight: 800;
+            color: white;
+            margin: 0.35rem 0 0.15rem 0;
+        }
+
+        .metric-desc {
+            font-size: 0.725rem;
+            color: var(--text-muted);
+        }
+
+        /* Pipeline Matrix Section */
+        .matrix-box {
+            background: var(--card-bg);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--card-border);
+            border-radius: 14px;
+            padding: 1.5rem;
+        }
+
+        .matrix-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.25rem;
+        }
+
+        .matrix-title {
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .matrix-sub {
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: #38bdf8;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+        }
+
+        .matrix-pipeline {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            overflow-x: auto;
+            padding-bottom: 0.5rem;
+        }
+
+        .stage-card {
+            flex: 1;
+            min-width: 130px;
+            background: rgba(11, 14, 20, 0.8);
+            border: 1px solid var(--card-border);
+            border-radius: 10px;
+            padding: 1rem 0.85rem;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.5rem;
+            position: relative;
+        }
+
+        .stage-num {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1);
+            font-size: 0.7rem;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-secondary);
+        }
+
+        .stage-name {
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: white;
+        }
+
+        .stage-sub {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+        }
+
+        .btn-stage {
+            width: 100%;
+            margin-top: 0.25rem;
+            padding: 0.4rem 0.5rem;
+            font-size: 0.75rem;
+            font-weight: 700;
+            border-radius: 6px;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            background: rgba(255, 255, 255, 0.05);
+            color: white;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-stage:hover {
+            background: var(--accent-orange);
+            border-color: var(--accent-orange);
+            box-shadow: 0 0 10px var(--accent-glow);
+        }
+
+        .btn-stage.highlight {
+            background: var(--accent-orange);
+            border-color: var(--accent-orange);
+            box-shadow: 0 0 12px var(--accent-glow);
+        }
+
+        .arrow-divider {
+            color: var(--text-muted);
+            font-size: 1.1rem;
+        }
+
+        /* Split Section */
+        .bottom-split {
+            display: grid;
+            grid-template-columns: 1.4fr 1fr;
+            gap: 1.5rem;
+        }
+
+        .split-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--card-border);
+            border-radius: 14px;
+            padding: 1.35rem;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .split-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .split-title {
+            font-size: 1rem;
+            font-weight: 700;
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .split-link {
+            font-size: 0.8rem;
+            color: var(--accent-orange);
+            text-decoration: none;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        /* Leads Table / List */
+        .prospects-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+        }
+
+        .prospects-table th {
+            text-align: left;
+            padding: 0.6rem 0.75rem;
+            font-size: 0.7rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            border-bottom: 1px solid var(--card-border);
+        }
+
+        .prospects-table td {
+            padding: 0.75rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+            color: var(--text-secondary);
+        }
+
+        .tier-badge {
+            font-size: 0.7rem;
+            font-weight: 800;
+            padding: 0.15rem 0.5rem;
+            border-radius: 4px;
+        }
+
+        .tier-hot { background: rgba(239, 68, 68, 0.18); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); }
+        .tier-warm { background: rgba(245, 158, 11, 0.18); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.3); }
+        .tier-low { background: rgba(16, 185, 129, 0.18); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3); }
+
+        /* Console Stream Box */
+        .console-stream {
+            background: #05070a;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 8px;
+            padding: 1rem;
+            font-family: 'Consolas', 'Courier New', monospace;
+            font-size: 0.75rem;
+            color: #38bdf8;
+            height: 220px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 0.35rem;
+        }
+
+        .log-line {
+            line-height: 1.4;
+            word-break: break-all;
+        }
+
+        .log-line.error { color: #f87171; }
+        .log-line.success { color: #4ade80; }
+        .log-line.info { color: #38bdf8; }
+
+        /* Action Buttons */
+        .btn-approve {
+            background: rgba(16, 185, 129, 0.2);
+            color: #10b981;
+            border: 1px solid rgba(16, 185, 129, 0.4);
+            padding: 0.35rem 0.75rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 700;
+            font-size: 0.8rem;
+        }
+
+        .btn-reject {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+            border: 1px solid rgba(239, 68, 68, 0.4);
+            padding: 0.35rem 0.75rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 700;
+            font-size: 0.8rem;
+        }
+
+        .btn-whatsapp {
+            background: rgba(37, 211, 102, 0.18);
+            color: #25d366;
+            border: 1px solid rgba(37, 211, 102, 0.45);
+            padding: 0.35rem 0.75rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 700;
+            font-size: 0.8rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            transition: all 0.2s ease;
+            text-decoration: none;
+        }
+
+        .btn-whatsapp:hover {
+            background: rgba(37, 211, 102, 0.35);
+            border-color: #25d366;
+            box-shadow: 0 0 12px rgba(37, 211, 102, 0.4);
+            color: #fff;
+        }
+
+        .btn-preview {
+            background: rgba(249, 115, 22, 0.2);
+            color: var(--accent-orange);
+            border: 1px solid rgba(249, 115, 22, 0.4);
+            padding: 0.35rem 0.75rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 700;
+            font-size: 0.8rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+
+        /* Modal Overlay */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(8px);
+            z-index: 999;
+            align-items: center;
+            justify-content: center;
+            padding: 1.5rem;
+        }
+
+        .modal-card {
+            background: #0f172a;
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            max-width: 700px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            padding: 1.75rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--card-border);
+            padding-bottom: 1rem;
+        }
+
+        .modal-title {
+            font-size: 1.2rem;
+            font-weight: 800;
+            color: white;
+        }
+
+        .btn-close {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+
+        .msg-box {
+            background: #07090e;
+            border: 1px solid var(--card-border);
+            border-radius: 8px;
+            padding: 1rem;
+            font-size: 0.85rem;
+            line-height: 1.5;
+            color: var(--text-primary);
+            white-space: pre-wrap;
+        }
+
+        .msg-label {
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: var(--accent-orange);
+            text-transform: uppercase;
+            margin-bottom: 0.4rem;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Top Header -->
+    <header class="top-header">
+        <div class="header-left">
+            <div class="brand-logo">
+                ⚡ LeadHunter<span class="orange">.AI</span>
+                <span class="badge-version">V1.0 PRO</span>
+            </div>
+        </div>
+
+        <div class="header-center">
+            <div class="input-group-inline">
+                📍
+                <div class="city-dropdown-wrapper" id="city-dropdown-wrapper">
+                    <div class="city-trigger" id="city-trigger" onclick="toggleCityDropdown()">
+                        <span id="city-trigger-label">Vadodara</span>
+                        <span class="caret">▼</span>
+                    </div>
+                    <div class="city-dropdown-menu" id="city-dropdown-menu">
+                        <div class="city-search-box">
+                            🔍 <input type="text" id="city-search-input" placeholder="Search or type city..." oninput="filterCityDropdown(this.value)" autocomplete="off">
+                        </div>
+                        <div class="city-custom-hint" id="city-custom-hint"></div>
+                        <div class="city-quick-section">
+                            <span class="city-section-label">⚡ Famous City Quick-Picks:</span>
+                            <div class="city-pills">
+                                <button type="button" class="city-pill active" onclick="selectCity('Vadodara')">Vadodara</button>
+                                <button type="button" class="city-pill" onclick="selectCity('Mumbai')">Mumbai</button>
+                                <button type="button" class="city-pill" onclick="selectCity('Delhi')">Delhi</button>
+                                <button type="button" class="city-pill" onclick="selectCity('Bengaluru')">Bengaluru</button>
+                                <button type="button" class="city-pill" onclick="selectCity('Ahmedabad')">Ahmedabad</button>
+                                <button type="button" class="city-pill" onclick="selectCity('Pune')">Pune</button>
+                                <button type="button" class="city-pill" onclick="selectCity('Surat')">Surat</button>
+                                <button type="button" class="city-pill" onclick="selectCity('Hyderabad')">Hyderabad</button>
+                                <button type="button" class="city-pill" onclick="selectCity('Jaipur')">Jaipur</button>
+                                <button type="button" class="city-pill" onclick="selectCity('Indore')">Indore</button>
+                                <button type="button" class="city-pill" onclick="selectCity('Kolkata')">Kolkata</button>
+                                <button type="button" class="city-pill" onclick="selectCity('Chennai')">Chennai</button>
+                            </div>
+                        </div>
+                        <div class="city-list-scrollable" id="city-list-container">
+                            <div class="city-group">
+                                <div class="city-group-header">🔥 Top Metros</div>
+                                <div class="city-item" onclick="selectCity('Mumbai')"><span>Mumbai</span> <small>Maharashtra</small></div>
+                                <div class="city-item" onclick="selectCity('Delhi')"><span>Delhi / NCR</span> <small>Delhi</small></div>
+                                <div class="city-item" onclick="selectCity('Bengaluru')"><span>Bengaluru (Bangalore)</span> <small>Karnataka</small></div>
+                                <div class="city-item" onclick="selectCity('Hyderabad')"><span>Hyderabad</span> <small>Telangana</small></div>
+                                <div class="city-item" onclick="selectCity('Ahmedabad')"><span>Ahmedabad</span> <small>Gujarat</small></div>
+                                <div class="city-item" onclick="selectCity('Chennai')"><span>Chennai</span> <small>Tamil Nadu</small></div>
+                                <div class="city-item" onclick="selectCity('Kolkata')"><span>Kolkata</span> <small>West Bengal</small></div>
+                                <div class="city-item" onclick="selectCity('Pune')"><span>Pune</span> <small>Maharashtra</small></div>
+                            </div>
+                            
+                            <div class="city-group">
+                                <div class="city-group-header">🏢 Gujarat Business Hubs</div>
+                                <div class="city-item" onclick="selectCity('Vadodara')"><span>Vadodara (Baroda)</span> <small>Gujarat</small></div>
+                                <div class="city-item" onclick="selectCity('Surat')"><span>Surat</span> <small>Gujarat</small></div>
+                                <div class="city-item" onclick="selectCity('Rajkot')"><span>Rajkot</span> <small>Gujarat</small></div>
+                                <div class="city-item" onclick="selectCity('Gandhinagar')"><span>Gandhinagar</span> <small>Gujarat</small></div>
+                                <div class="city-item" onclick="selectCity('Bhavnagar')"><span>Bhavnagar</span> <small>Gujarat</small></div>
+                                <div class="city-item" onclick="selectCity('Jamnagar')"><span>Jamnagar</span> <small>Gujarat</small></div>
+                                <div class="city-item" onclick="selectCity('Anand')"><span>Anand</span> <small>Gujarat</small></div>
+                            </div>
+
+                            <div class="city-group">
+                                <div class="city-group-header">🏰 North India</div>
+                                <div class="city-item" onclick="selectCity('Jaipur')"><span>Jaipur</span> <small>Rajasthan</small></div>
+                                <div class="city-item" onclick="selectCity('Lucknow')"><span>Lucknow</span> <small>Uttar Pradesh</small></div>
+                                <div class="city-item" onclick="selectCity('Chandigarh')"><span>Chandigarh</span> <small>Punjab / Haryana</small></div>
+                                <div class="city-item" onclick="selectCity('Noida')"><span>Noida</span> <small>Uttar Pradesh</small></div>
+                                <div class="city-item" onclick="selectCity('Gurugram')"><span>Gurugram (Gurgaon)</span> <small>Haryana</small></div>
+                                <div class="city-item" onclick="selectCity('Agra')"><span>Agra</span> <small>Uttar Pradesh</small></div>
+                                <div class="city-item" onclick="selectCity('Varanasi')"><span>Varanasi</span> <small>Uttar Pradesh</small></div>
+                                <div class="city-item" onclick="selectCity('Kanpur')"><span>Kanpur</span> <small>Uttar Pradesh</small></div>
+                                <div class="city-item" onclick="selectCity('Amritsar')"><span>Amritsar</span> <small>Punjab</small></div>
+                                <div class="city-item" onclick="selectCity('Ludhiana')"><span>Ludhiana</span> <small>Punjab</small></div>
+                                <div class="city-item" onclick="selectCity('Dehradun')"><span>Dehradun</span> <small>Uttarakhand</small></div>
+                            </div>
+
+                            <div class="city-group">
+                                <div class="city-group-header">🌴 South India</div>
+                                <div class="city-item" onclick="selectCity('Kochi')"><span>Kochi (Cochin)</span> <small>Kerala</small></div>
+                                <div class="city-item" onclick="selectCity('Coimbatore')"><span>Coimbatore</span> <small>Tamil Nadu</small></div>
+                                <div class="city-item" onclick="selectCity('Visakhapatnam')"><span>Visakhapatnam (Vizag)</span> <small>Andhra Pradesh</small></div>
+                                <div class="city-item" onclick="selectCity('Mysore')"><span>Mysore (Mysuru)</span> <small>Karnataka</small></div>
+                                <div class="city-item" onclick="selectCity('Mangalore')"><span>Mangalore</span> <small>Karnataka</small></div>
+                                <div class="city-item" onclick="selectCity('Thiruvananthapuram')"><span>Thiruvananthapuram</span> <small>Kerala</small></div>
+                                <div class="city-item" onclick="selectCity('Madurai')"><span>Madurai</span> <small>Tamil Nadu</small></div>
+                                <div class="city-item" onclick="selectCity('Vijayawada')"><span>Vijayawada</span> <small>Andhra Pradesh</small></div>
+                            </div>
+
+                            <div class="city-group">
+                                <div class="city-group-header">🌟 Central & West India</div>
+                                <div class="city-item" onclick="selectCity('Indore')"><span>Indore</span> <small>Madhya Pradesh</small></div>
+                                <div class="city-item" onclick="selectCity('Bhopal')"><span>Bhopal</span> <small>Madhya Pradesh</small></div>
+                                <div class="city-item" onclick="selectCity('Nagpur')"><span>Nagpur</span> <small>Maharashtra</small></div>
+                                <div class="city-item" onclick="selectCity('Nashik')"><span>Nashik</span> <small>Maharashtra</small></div>
+                                <div class="city-item" onclick="selectCity('Goa')"><span>Goa (Panaji)</span> <small>Goa</small></div>
+                                <div class="city-item" onclick="selectCity('Raipur')"><span>Raipur</span> <small>Chhattisgarh</small></div>
+                                <div class="city-item" onclick="selectCity('Udaipur')"><span>Udaipur</span> <small>Rajasthan</small></div>
+                                <div class="city-item" onclick="selectCity('Jodhpur')"><span>Jodhpur</span> <small>Rajasthan</small></div>
+                            </div>
+
+                            <div class="city-group">
+                                <div class="city-group-header">🌊 East & North-East</div>
+                                <div class="city-item" onclick="selectCity('Patna')"><span>Patna</span> <small>Bihar</small></div>
+                                <div class="city-item" onclick="selectCity('Bhubaneswar')"><span>Bhubaneswar</span> <small>Odisha</small></div>
+                                <div class="city-item" onclick="selectCity('Ranchi')"><span>Ranchi</span> <small>Jharkhand</small></div>
+                                <div class="city-item" onclick="selectCity('Guwahati')"><span>Guwahati</span> <small>Assam</small></div>
+                                <div class="city-item" onclick="selectCity('Siliguri')"><span>Siliguri</span> <small>West Bengal</small></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Hidden input synced with selection for compatibility -->
+                <input type="hidden" id="hdr-city" value="Vadodara">
+            </div>
+            <div style="color: var(--card-border);">|</div>
+            <div class="input-group-inline">
+                💼
+                <div class="category-dropdown-wrapper" id="cat-dropdown-wrapper">
+                    <div class="category-trigger" id="cat-trigger" onclick="toggleCategoryDropdown()">
+                        <span id="cat-trigger-label">restaurants</span>
+                        <span class="caret">▼</span>
+                    </div>
+                    <div class="category-dropdown-menu" id="cat-dropdown-menu">
+                        <label class="cat-option"><input type="checkbox" value="restaurants" onchange="updateCategorySelection()" checked> 🍽️ Restaurants</label>
+                        <label class="cat-option"><input type="checkbox" value="dental clinics" onchange="updateCategorySelection()"> 🦷 Dental Clinics</label>
+                        <label class="cat-option"><input type="checkbox" value="hotels" onchange="updateCategorySelection()"> 🏨 Hotels</label>
+                        <label class="cat-option"><input type="checkbox" value="gyms" onchange="updateCategorySelection()"> 💪 Gyms & Fitness</label>
+                        <label class="cat-option"><input type="checkbox" value="beauty salons" onchange="updateCategorySelection()"> 💅 Beauty Salons</label>
+                        <label class="cat-option"><input type="checkbox" value="clinics" onchange="updateCategorySelection()"> 🏥 Clinics & Doctors</label>
+                        <label class="cat-option"><input type="checkbox" value="cafes" onchange="updateCategorySelection()"> ☕ Cafes</label>
+                        <label class="cat-option"><input type="checkbox" value="retail shops" onchange="updateCategorySelection()"> 🛍️ Retail Shops</label>
+                        <label class="cat-option"><input type="checkbox" value="real estate" onchange="updateCategorySelection()"> 🏠 Real Estate</label>
+                        <label class="cat-option"><input type="checkbox" value="lawyers" onchange="updateCategorySelection()"> ⚖️ Lawyers</label>
+                        <div class="cat-dropdown-footer">
+                            <button class="cat-btn-select-all" onclick="selectAllCategories()">Select All</button>
+                            <button class="cat-btn-clear" onclick="clearCategories()">Clear</button>
+                        </div>
+                    </div>
+                </div>
+                <!-- Hidden input for compatibility with existing runStage/triggerFollowups -->
+                <input type="hidden" id="hdr-category" value="restaurants">
+            </div>
+        </div>
+
+        <div class="header-right">
+            <div class="mode-switch-group">
+                <button id="btn-mode-dry" class="mode-switch-btn {% if config.DRY_RUN %}active-dry{% else %}inactive{% endif %}" onclick="setSystemMode('dry')" title="Switch to DRY RUN safety mode">
+                    🛡️ DRY RUN
+                </button>
+                <button id="btn-mode-live" class="mode-switch-btn {% if not config.DRY_RUN %}active-live{% else %}inactive{% endif %}" onclick="setSystemMode('live')" title="Switch to LIVE DISPATCH outreach mode">
+                    🚀 LIVE DISPATCH
+                </button>
+            </div>
+            <button id="btn-mode-autopilot" class="mode-switch-btn {% if config.AUTO_APPROVE %}active-dry{% else %}inactive{% endif %}" onclick="toggleAutoPilot()" style="border: 1px solid rgba(251, 191, 36, 0.5); color: #fbbf24; padding: 0.4rem 0.85rem; border-radius: 9999px; cursor: pointer;" title="Auto-pilot automatically approves and sends outreach to qualified leads">
+                ⚡ AUTO-PILOT: <strong id="autopilot-status-text">{% if config.AUTO_APPROVE %}ON{% else %}OFF{% endif %}</strong>
+            </button>
+            <button class="btn-run-full" onclick="runStage('full')">
+                🚀 Run Full Pipeline
+            </button>
+        </div>
+    </header>
+
+    <div class="app-layout">
+        <!-- Left Sidebar Navigation -->
+        <aside class="sidebar">
+            <div>
+                <div class="nav-section-title">Navigation</div>
+                <ul class="nav-menu">
+                    <li>
+                        <a href="#" class="nav-item active" id="nav-overview" onclick="showTab('overview')">
+                            📊 Pipeline Overview
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" class="nav-item" id="nav-approval" onclick="showTab('approval')">
+                            🛡️ Human Approval Queue
+                            <span class="nav-badge" id="nav-pending-count">{{ stats.pending_approval }}</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" class="nav-item" id="nav-explorer" onclick="showTab('explorer')">
+                            👥 Lead Explorer Table
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" class="nav-item" id="nav-followups" onclick="showTab('followups'); loadFollowups()">
+                            🔄 Follow-ups
+                            <span class="nav-badge" id="nav-followup-count" style="background: rgba(251,191,36,0.2); color: #fbbf24;">Auto</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" class="nav-item" id="nav-tracker" onclick="showTab('tracker'); loadOutreachTracker()">
+                            📡 Outreach Delivery Tracker
+                            <span class="nav-badge" id="nav-delivered-count" style="background: rgba(16,185,129,0.2); color: #10b981;">{{ stats.outreach_delivered }} Delivered</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" class="nav-item" id="nav-console" onclick="showTab('console')">
+                            💻 Live Console Logs
+                        </a>
+                    </li>
+                </ul>
+            </div>
+
+            <div>
+                <div class="nav-section-title">Quick 1-Click Actions</div>
+                <ul class="nav-menu">
+                    <li><a href="#" class="nav-item" onclick="runStage('discover')">🔍 Discover Leads</a></li>
+                    <li><a href="#" class="nav-item" onclick="runStage('verify')">🌐 Verify Websites</a></li>
+                    <li><a href="#" class="nav-item" onclick="runStage('score')">⭐ Score & Qualify</a></li>
+                    <li><a href="#" class="nav-item" onclick="runStage('ai_copy')">✨ AI Personalize</a></li>
+                    <li><a href="#" class="nav-item" onclick="runStage('demos')">🎨 Generate Demos</a></li>
+                    <li><a href="#" class="nav-item" onclick="runStage('outreach')">📤 Dispatch Outreach</a></li>
+                    <li><a href="#" class="nav-item" onclick="triggerFollowups()">🔄 Run Followups</a></li>
+                    <li><a href="#" class="nav-item" onclick="syncToSheets()" style="color: #34a853; font-weight: 700;">📊 Sync → Google Sheets</a></li>
+                </ul>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+
+            <!-- TAB 1: OVERVIEW -->
+            <div class="tab-content active" id="tab-overview">
+                <div class="content-header">
+                    <div class="content-title-box">
+                        <h1>Pipeline Overview & Metrics</h1>
+                        <p>Real-time status of your B2B prospect pipeline</p>
+                    </div>
+                    <button class="btn-refresh" onclick="location.reload()">🔄 Refresh Data</button>
+                </div>
+
+                <!-- KPI Metric Cards Grid -->
+                <div class="metrics-grid">
+                    <div class="metric-card" onclick="filterByMetric('all')" title="Click to view all discovered leads">
+                        <div class="metric-label">Discovered 📍</div>
+                        <div class="metric-value">{{ stats.total_leads }}</div>
+                        <div class="metric-desc">Google Maps & SerpAPI</div>
+                    </div>
+                    <div class="metric-card" onclick="filterByMetric('hot')" title="Click to view HOT leads">
+                        <div class="metric-label">🔥 HOT Leads</div>
+                        <div class="metric-value" style="color: #ef4444;">{{ stats.hot_leads }}</div>
+                        <div class="metric-desc">Score ≥70 (No Site / Broken)</div>
+                    </div>
+                    <div class="metric-card" onclick="filterByMetric('warm')" title="Click to view WARM leads">
+                        <div class="metric-label">⚡ WARM Leads</div>
+                        <div class="metric-value" style="color: #f59e0b;">{{ stats.warm_leads }}</div>
+                        <div class="metric-desc">Score 45–69</div>
+                    </div>
+                    <div class="metric-card" onclick="filterByMetric('demos')" title="Click to view Demos Ready">
+                        <div class="metric-label">Demos Ready 💻</div>
+                        <div class="metric-value" style="color: #38bdf8;">{{ stats.demo_ready }}</div>
+                        <div class="metric-desc">Live Landing Page Previews</div>
+                    </div>
+                    <div class="metric-card" onclick="showTab('tracker'); loadOutreachTracker();" title="Click to view Delivered Outreach">
+                        <div class="metric-label">Delivered ✅</div>
+                        <div class="metric-value" style="color: #10b981;">{{ stats.outreach_delivered }}</div>
+                        <div class="metric-desc">Email/WA Successfully Sent</div>
+                    </div>
+                    <div class="metric-card" onclick="showTab('tracker'); loadOutreachTracker();" title="Click to view Failed Outreach">
+                        <div class="metric-label">Outreach Failed ❌</div>
+                        <div class="metric-value" style="color: #f87171;">{{ stats.outreach_failed }}</div>
+                        <div class="metric-desc">Delivery Errors / Bounced</div>
+                    </div>
+                </div>
+
+                <!-- Interactive Pipeline Control Matrix -->
+                <div class="matrix-box">
+                    <div class="matrix-header">
+                        <div class="matrix-title">⚡ Interactive Pipeline Control Matrix</div>
+                        <div class="matrix-sub">CLICK ANY STAGE TO EXECUTE INSTANTLY</div>
+                    </div>
+
+                    <div class="matrix-pipeline">
+                        <div class="stage-card">
+                            <div class="stage-num">1</div>
+                            <div class="stage-name">Discovery</div>
+                            <div class="stage-sub">SerpAPI Maps</div>
+                            <button class="btn-stage" onclick="runStage('discover')">Run Discovery</button>
+                        </div>
+                        <div class="arrow-divider">→</div>
+
+                        <div class="stage-card">
+                            <div class="stage-num">2</div>
+                            <div class="stage-name">Verification</div>
+                            <div class="stage-sub">HTTP Check</div>
+                            <button class="btn-stage" onclick="runStage('verify')">Check Sites</button>
+                        </div>
+                        <div class="arrow-divider">→</div>
+
+                        <div class="stage-card">
+                            <div class="stage-num">3</div>
+                            <div class="stage-name">Scoring</div>
+                            <div class="stage-sub">HOT/WARM/LOW</div>
+                            <button class="btn-stage" onclick="runStage('score')">Score Leads</button>
+                        </div>
+                        <div class="arrow-divider">→</div>
+
+                        <div class="stage-card">
+                            <div class="stage-num">4</div>
+                            <div class="stage-name">AI Copy</div>
+                            <div class="stage-sub">Claude Sonnet</div>
+                            <button class="btn-stage" onclick="runStage('ai_copy')">Write Copy</button>
+                        </div>
+                        <div class="arrow-divider">→</div>
+
+                        <div class="stage-card">
+                            <div class="stage-num">5</div>
+                            <div class="stage-name">Demo Pages</div>
+                            <div class="stage-sub">Preview Sites</div>
+                            <button class="btn-stage" onclick="runStage('demos')">Build Demos</button>
+                        </div>
+                        <div class="arrow-divider">→</div>
+
+                        <div class="stage-card">
+                            <div class="stage-num">6</div>
+                            <div class="stage-name">Approval</div>
+                            <div class="stage-sub">Human Gate</div>
+                            <button class="btn-stage highlight" onclick="showTab('approval')">Review Queue</button>
+                        </div>
+                        <div class="arrow-divider">→</div>
+
+                        <div class="stage-card">
+                            <div class="stage-num">7</div>
+                            <div class="stage-name">Outreach</div>
+                            <div class="stage-sub">Email & WhatsApp</div>
+                            <button class="btn-stage" onclick="runStage('outreach')">Send Outreach</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Bottom Split Section -->
+                <div class="bottom-split">
+                    <!-- Top Prospects -->
+                    <div class="split-card">
+                        <div class="split-header">
+                            <div class="split-title">🔥 Top Prospects Ready for Action</div>
+                            <a href="#" class="split-link" onclick="showTab('explorer')">View All →</a>
+                        </div>
+                        <table class="prospects-table">
+                            <thead>
+                                <tr>
+                                    <th>Business Name</th>
+                                    <th>Score</th>
+                                    <th>Tier</th>
+                                    <th>Outreach Preview</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for lead in leads[:6] %}
+                                <tr>
+                                    <td><strong>{{ lead.business_name }}</strong></td>
+                                    <td>{{ lead.lead_score }}/100</td>
+                                    <td><span class="tier-badge tier-{{ (lead.lead_tier or 'low')|lower }}">{{ lead.lead_tier or 'LOW' }}</span></td>
+                                    <td>
+                                        <button class="btn-preview" onclick='openOutreachModal({{ lead|tojson|safe }})'>
+                                            👁️ View Copy
+                                        </button>
+                                    </td>
+                                    <td>
+                                        {% if lead.approval_status in ('PENDING_APPROVAL', 'PENDING') %}
+                                        <button class="btn-approve" onclick="approveLead('{{ lead.lead_id }}')">Approve</button>
+                                        {% else %}
+                                        <span style="color: var(--text-muted); font-size: 0.75rem;">{{ lead.approval_status }}</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Activity Stream -->
+                    <div class="split-card">
+                        <div class="split-header">
+                            <div class="split-title">📜 Live Activity Stream</div>
+                            <a href="#" class="split-link" onclick="fetchLogs()">Refresh Console →</a>
+                        </div>
+                        <div class="console-stream" id="console-stream">
+                            <div class="log-line info">[INFO] System initialized. LeadHunter AI active.</div>
+                            <div class="log-line success">[SUCCESS] Database connected successfully.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 2: HUMAN APPROVAL QUEUE -->
+            <div class="tab-content" id="tab-approval">
+                <div class="content-header">
+                    <div class="content-title-box">
+                        <h1>🛡️ Human Approval Review Queue</h1>
+                        <p>Inspect AI-generated outreach copy & approve/reject leads before dispatching outreach</p>
+                    </div>
+                    <div style="display: flex; gap: 0.75rem; align-items: center;">
+                        <button class="btn-run-full" onclick="approveAllLeads()" style="background: linear-gradient(135deg, #10b981, #059669); font-size: 0.82rem; padding: 0.45rem 1.1rem; box-shadow: 0 0 15px rgba(16, 185, 129, 0.4);">
+                            ⚡ Auto-Approve & Send All Pending
+                        </button>
+                        <button class="btn-refresh" onclick="location.reload()">🔄 Refresh Queue</button>
+                    </div>
+                </div>
+
+                <div class="split-card" style="width: 100%;">
+                    <table class="prospects-table">
+                        <thead>
+                            <tr>
+                                <th>Business Name</th>
+                                <th>City</th>
+                                <th>Score / Tier</th>
+                                <th>Website Status</th>
+                                <th>Demo Preview</th>
+                                <th>AI Outreach Copy</th>
+                                <th>Approval Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for lead in leads %}
+                            {% if lead.approval_status in ('PENDING_APPROVAL', 'PENDING') %}
+                            <tr>
+                                <td>
+                                    <strong>{{ lead.business_name }}</strong>
+                                    {% if lead.followup_count and lead.followup_count > 0 %}
+                                    <span style="background: rgba(249,115,22,0.2); color: #f97316; border: 1px solid rgba(249,115,22,0.4); font-size: 0.7rem; font-weight: 800; padding: 0.15rem 0.5rem; border-radius: 4px; margin-left: 0.4rem;">
+                                        🔄 Follow-up #{{ lead.followup_count }}
+                                    </span>
+                                    {% endif %}
+                                    <br><span style="font-size: 0.75rem; color: var(--text-muted);">{{ lead.phone or 'No phone' }}</span>
+                                </td>
+                                <td>{{ lead.city or 'N/A' }}</td>
+                                <td>{{ lead.lead_score }}/100 <span class="tier-badge tier-{{ (lead.lead_tier or 'low')|lower }}">{{ lead.lead_tier or 'LOW' }}</span></td>
+                                <td><span style="font-size: 0.75rem; color: var(--text-secondary);">{{ lead.website_status or 'N/A' }}</span></td>
+                                <td>
+                                    {% if lead.demo_url %}
+                                    <a href="{{ lead.demo_url }}" target="_blank" style="color: #38bdf8; font-weight: 600;">Preview Demo</a>
+                                    {% else %}
+                                    <span style="color: var(--text-muted);">N/A</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <button class="btn-preview" onclick='openOutreachModal({{ lead|tojson|safe }})'>
+                                        👁️ Inspect Outreach Message
+                                    </button>
+                                </td>
+                                <td style="display: flex; gap: 0.35rem; padding-top: 1rem; align-items: center;">
+                                    <button class="btn-approve" onclick="approveLead('{{ lead.lead_id }}', {{ lead|tojson|safe }})">Approve</button>
+                                    {% if lead.phone %}
+                                    <button class="btn-whatsapp" onclick='sendDirectWhatsApp({{ lead|tojson|safe }})' title="Send WhatsApp to {{ lead.business_name }}">💬 WhatsApp</button>
+                                    {% endif %}
+                                    <button class="btn-reject" onclick="rejectLead('{{ lead.lead_id }}')">Reject</button>
+                                </td>
+                            </tr>
+                            {% endif %}
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- TAB 3: LEAD EXPLORER TABLE -->
+            <div class="tab-content" id="tab-explorer">
+                <div class="content-header">
+                    <div class="content-title-box">
+                        <h1 id="explorer-title">👥 Lead Explorer Table</h1>
+                        <p id="explorer-sub">Complete database of all discovered, qualified, and contacted prospects</p>
+                    </div>
+                    <div style="display: flex; gap: 0.75rem; align-items: center;">
+                        <div id="explorer-filter-badge" style="display: none; background: rgba(56, 189, 248, 0.15); border: 1px solid #38bdf8; color: #38bdf8; padding: 0.4rem 0.9rem; border-radius: 8px; font-size: 0.825rem; font-weight: 700; align-items: center;">
+                            Active Filter: <strong id="filter-name-text" style="margin-left: 4px; color: #fff;">HOT Leads</strong>
+                            <button onclick="filterByMetric('all')" style="margin-left: 10px; background: rgba(239, 68, 68, 0.2); border: 1px solid rgba(239, 68, 68, 0.5); color: #ef4444; border-radius: 4px; padding: 0.1rem 0.5rem; cursor: pointer; font-size: 0.75rem; font-weight: bold;" title="Clear filter">✕ Clear Filter</button>
+                        </div>
+                        <button class="btn-refresh" onclick="location.reload()">🔄 Refresh Table</button>
+                    </div>
+                </div>
+
+                <div class="split-card">
+                    <table class="prospects-table">
+                        <thead>
+                            <tr>
+                                <th>Business Name</th>
+                                <th>City</th>
+                                <th>Category</th>
+                                <th>Score / Tier</th>
+                                <th>Website</th>
+                                <th>Approval</th>
+                                <th>Outreach</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="explorer-table-body">
+                            {% for lead in leads %}
+                            <tr data-tier="{{ (lead.lead_tier or 'LOW')|lower }}"
+                                data-demo="{{ (lead.demo_status or '')|lower }}"
+                                data-demo-url="{{ lead.demo_url or '' }}"
+                                data-approval="{{ (lead.approval_status or '')|lower }}"
+                                data-status="{{ (lead.status or '')|lower }}"
+                                data-email-status="{{ (lead.email_status or '')|lower }}">
+                                <td><strong>{{ lead.business_name }}</strong></td>
+                                <td>{{ lead.city or 'N/A' }}</td>
+                                <td>{{ lead.category or 'N/A' }}</td>
+                                <td>{{ lead.lead_score }}/100 <span class="tier-badge tier-{{ (lead.lead_tier or 'low')|lower }}">{{ lead.lead_tier or 'LOW' }}</span></td>
+                                <td>{{ lead.website_status or 'N/A' }}</td>
+                                <td><span style="font-size:0.75rem; color: #cbd5e1;">{{ lead.approval_status }}</span></td>
+                                <td><span style="font-size:0.75rem; color: #cbd5e1;">{{ lead.email_status }}</span></td>
+                                <td>
+                                    <button class="btn-preview" onclick='openOutreachModal({{ lead|tojson|safe }})'>👁️ View</button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- TAB 4: LIVE CONSOLE LOGS -->
+            <div class="tab-content" id="tab-console">
+                <div class="content-header">
+                    <div class="content-title-box">
+                        <h1>💻 Live Console Logs</h1>
+                        <p>Real-time execution log stream for all pipeline stages and safety checks</p>
+                    </div>
+                    <button class="btn-refresh" onclick="fetchLogs()">🔄 Refresh Console</button>
+                </div>
+
+                <div class="console-stream" id="full-console-stream" style="height: 500px;">
+                    <div class="log-line info">[INFO] System initialized. LeadHunter AI console stream active.</div>
+                </div>
+            </div>
+
+            <!-- TAB 5: FOLLOW-UPS -->
+            <div class="tab-content" id="tab-followups">
+                <div class="content-header">
+                    <div class="content-title-box">
+                        <h1>🔄 Automated Follow-Up Tracker</h1>
+                        <p>System auto-sends follow-ups on Day 3 &amp; Day 7 after initial outreach — no manual action needed.</p>
+                    </div>
+                    <button class="btn-refresh" onclick="loadFollowups()">🔄 Refresh</button>
+                </div>
+
+                <!-- Auto-scheduler status banner -->
+                <div id="followup-scheduler-banner" style="
+                    background: rgba(251,191,36,0.08);
+                    border: 1px solid rgba(251,191,36,0.3);
+                    border-radius: 12px;
+                    padding: 1rem 1.5rem;
+                    margin-bottom: 1.5rem;
+                    display: flex;
+                    align-items: center;
+                    gap: 1rem;
+                    font-size: 0.85rem;
+                    color: #fbbf24;
+                ">
+                    <span style="font-size: 1.5rem;">⏰</span>
+                    <div>
+                        <strong>Background Scheduler Active</strong> — The system automatically checks every <strong>4 hours</strong> and dispatches follow-ups on schedule.
+                        In <strong>🚀 LIVE MODE</strong>: emails &amp; WhatsApp messages are sent directly to clients.
+                        In <strong>🛡️ DRY RUN MODE</strong>: follow-ups are generated and previewed only.
+                    </div>
+                </div>
+
+                <!-- Timeline Legend -->
+                <div style="display: flex; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap;">
+                    <div style="background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.3); border-radius: 8px; padding: 0.6rem 1rem; font-size: 0.8rem; color: #10b981;">
+                        📅 <strong>Day 0</strong> — Initial Email &amp; WhatsApp Sent
+                    </div>
+                    <div style="background: rgba(251,191,36,0.1); border: 1px solid rgba(251,191,36,0.3); border-radius: 8px; padding: 0.6rem 1rem; font-size: 0.8rem; color: #fbbf24;">
+                        📅 <strong>Day 3</strong> — Follow-up #1 Auto-Dispatched
+                    </div>
+                    <div style="background: rgba(249,115,22,0.1); border: 1px solid rgba(249,115,22,0.3); border-radius: 8px; padding: 0.6rem 1rem; font-size: 0.8rem; color: #f97316;">
+                        📅 <strong>Day 7</strong> — Follow-up #2 Auto-Dispatched
+                    </div>
+                    <div style="background: rgba(148,163,184,0.1); border: 1px solid rgba(148,163,184,0.3); border-radius: 8px; padding: 0.6rem 1rem; font-size: 0.8rem; color: #94a3b8;">
+                        ❄️ <strong>Day 10+</strong> — No reply → Marked COLD
+                    </div>
+                </div>
+
+                <!-- Sent Follow-ups Table -->
+                <div class="table-wrapper">
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem;">
+                        <div style="font-size: 0.9rem; font-weight: 700; color: var(--text-primary);">📬 Sent Follow-ups</div>
+                        <span id="sent-fu-count" style="font-size: 0.8rem; color: var(--text-muted);">Loading...</span>
+                    </div>
+                    <table class="leads-table" id="sent-followups-table">
+                        <thead>
+                            <tr>
+                                <th>Business Name</th>
+                                <th>Email</th>
+                                <th>Follow-up #</th>
+                                <th>Status</th>
+                                <th>Last Sent</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="sent-followups-body">
+                            <tr><td colspan="6" style="text-align:center; color: var(--text-muted); padding: 2rem;">Loading follow-up records...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Upcoming Follow-ups Table -->
+                <div class="table-wrapper" style="margin-top: 2rem;">
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem;">
+                        <div style="font-size: 0.9rem; font-weight: 700; color: var(--text-primary);">⏳ Upcoming Follow-ups (Scheduled)</div>
+                        <span id="upcoming-fu-count" style="font-size: 0.8rem; color: var(--text-muted);">Loading...</span>
+                    </div>
+                    <table class="leads-table" id="upcoming-followups-table">
+                        <thead>
+                            <tr>
+                                <th>Business Name</th>
+                                <th>Email</th>
+                                <th>Initial Outreach</th>
+                                <th>Next Follow-up</th>
+                                <th>Days Since Sent</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="upcoming-followups-body">
+                            <tr><td colspan="6" style="text-align:center; color: var(--text-muted); padding: 2rem;">Loading upcoming follow-ups...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Follow-up Preview Modal trigger area -->
+                <div id="fu-preview-area" style="margin-top: 2rem; display: none;">
+                    <div style="font-size: 0.9rem; font-weight: 700; color: var(--text-primary); margin-bottom: 1rem;">📧 Follow-up Message Preview</div>
+                    <div style="background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 12px; padding: 1.5rem;">
+                        <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.5rem;">EMAIL MESSAGE</div>
+                        <pre id="fu-email-preview" style="font-size: 0.82rem; white-space: pre-wrap; color: var(--text-secondary); font-family: 'Inter', sans-serif;"></pre>
+                        <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 1rem; margin-bottom: 0.5rem;">💬 WHATSAPP MESSAGE</div>
+                        <pre id="fu-wa-preview" style="font-size: 0.82rem; white-space: pre-wrap; color: #34d399; font-family: 'Inter', sans-serif;"></pre>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 6: OUTREACH DELIVERY TRACKER -->
+            <div class="tab-content" id="tab-tracker">
+                <div class="content-header">
+                    <div class="content-title-box">
+                        <h1>📡 Outreach Delivery Tracker</h1>
+                        <p>Real-time delivery status breakdown for Auto-Pilot &amp; Manual outreach dispatch</p>
+                    </div>
+                    <button class="btn-refresh" onclick="loadOutreachTracker()">🔄 Refresh Tracker</button>
+                </div>
+
+                <!-- Tracker Metric Summary Cards -->
+                <div class="metrics-grid" style="margin-bottom: 1.5rem;">
+                    <div class="metric-card" onclick="filterTrackerSection('delivered')" style="border-left: 4px solid #10b981;">
+                        <div class="metric-label">Delivered Clients ✅</div>
+                        <div class="metric-value" id="trk-stat-delivered" style="color: #10b981;">0</div>
+                        <div class="metric-desc">Successfully sent Email or WhatsApp</div>
+                    </div>
+                    <div class="metric-card" onclick="filterTrackerSection('failed')" style="border-left: 4px solid #ef4444;">
+                        <div class="metric-label">Failed Outreach ❌</div>
+                        <div class="metric-value" id="trk-stat-failed" style="color: #ef4444;">0</div>
+                        <div class="metric-desc">Delivery errors / Bounced</div>
+                    </div>
+                    <div class="metric-card" onclick="filterTrackerSection('dry_run')" style="border-left: 4px solid #f59e0b;">
+                        <div class="metric-label">Dry Run Simulated 🛡️</div>
+                        <div class="metric-value" id="trk-stat-dryrun" style="color: #f59e0b;">0</div>
+                        <div class="metric-desc">Processed in DRY RUN mode</div>
+                    </div>
+                    <div class="metric-card" onclick="filterTrackerSection('pending')" style="border-left: 4px solid #38bdf8;">
+                        <div class="metric-label">Awaiting Dispatch ⌛</div>
+                        <div class="metric-value" id="trk-stat-pending" style="color: #38bdf8;">0</div>
+                        <div class="metric-desc">Approved &amp; queued for sending</div>
+                    </div>
+                </div>
+
+                <!-- Section Selector Buttons -->
+                <div style="display: flex; gap: 0.5rem; margin-bottom: 1.25rem;">
+                    <button id="trk-btn-delivered" onclick="filterTrackerSection('delivered')" class="btn-stage highlight" style="width: auto; padding: 0.5rem 1.2rem; font-size: 0.82rem;">
+                        ✅ Delivered Clients (<span id="cnt-delivered">0</span>)
+                    </button>
+                    <button id="trk-btn-failed" onclick="filterTrackerSection('failed')" class="btn-stage" style="width: auto; padding: 0.5rem 1.2rem; font-size: 0.82rem; border-color: rgba(239, 68, 68, 0.4); color: #ef4444;">
+                        ❌ Failed Outreach (<span id="cnt-failed">0</span>)
+                    </button>
+                    <button id="trk-btn-dryrun" onclick="filterTrackerSection('dry_run')" class="btn-stage" style="width: auto; padding: 0.5rem 1.2rem; font-size: 0.82rem;">
+                        🛡️ Dry Run Simulated (<span id="cnt-dryrun">0</span>)
+                    </button>
+                </div>
+
+                <!-- SECTION 1: DELIVERED CLIENTS TABLE -->
+                <div class="split-card" id="trk-sec-delivered" style="width: 100%;">
+                    <div style="font-size: 1rem; font-weight: 700; color: #10b981; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
+                        ✅ Delivered Clients — Successfully Contacted
+                    </div>
+                    <table class="prospects-table">
+                        <thead>
+                            <tr>
+                                <th>Business Name</th>
+                                <th>City / Category</th>
+                                <th>Email Status</th>
+                                <th>WhatsApp Status</th>
+                                <th>Last Contacted</th>
+                                <th>Direct Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="trk-tbl-delivered">
+                            <tr><td colspan="6" style="text-align:center; color: var(--text-muted); padding: 2rem;">Loading delivered leads...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- SECTION 2: FAILED OUTREACH TABLE -->
+                <div class="split-card" id="trk-sec-failed" style="width: 100%; display: none;">
+                    <div style="font-size: 1rem; font-weight: 700; color: #ef4444; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
+                        ❌ Failed Outreach — Errors &amp; Delivery Bounced
+                    </div>
+                    <table class="prospects-table">
+                        <thead>
+                            <tr>
+                                <th>Business Name</th>
+                                <th>City</th>
+                                <th>Email / Phone</th>
+                                <th>Failure Reason / Error Log</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="trk-tbl-failed">
+                            <tr><td colspan="5" style="text-align:center; color: var(--text-muted); padding: 2rem;">Loading failed leads...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- SECTION 3: DRY RUN SENT TABLE -->
+                <div class="split-card" id="trk-sec-dryrun" style="width: 100%; display: none;">
+                    <div style="font-size: 1rem; font-weight: 700; color: #f59e0b; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
+                        🛡️ Dry Run Simulated Outreach
+                    </div>
+                    <table class="prospects-table">
+                        <thead>
+                            <tr>
+                                <th>Business Name</th>
+                                <th>City</th>
+                                <th>Email</th>
+                                <th>Phone</th>
+                                <th>Mode Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="trk-tbl-dryrun">
+                            <tr><td colspan="5" style="text-align:center; color: var(--text-muted); padding: 2rem;">Loading dry run records...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+            </div>
+
+        </main>
+    </div>
+
+    <!-- OUTREACH INSPECTION MODAL -->
+    <div class="modal-overlay" id="modal-outreach">
+        <div class="modal-card">
+            <div class="modal-header">
+                <div class="modal-title" id="mdl-business-name">Business Outreach Review</div>
+                <button class="btn-close" onclick="closeModal()">&times;</button>
+            </div>
+
+            <div>
+                <div class="msg-label">Lead Details & Qualification Reason</div>
+                <div style="font-size: 0.85rem; color: var(--text-secondary);" id="mdl-reason">
+                    Qualification reason loading...
+                </div>
+            </div>
+
+            <div>
+                <div class="msg-label">📧 Generated Email Message</div>
+                <div class="msg-box" id="mdl-email-msg">No email message generated yet.</div>
+            </div>
+
+            <div>
+                <div class="msg-label">💬 Generated WhatsApp Message</div>
+                <div class="msg-box" id="mdl-whatsapp-msg">No WhatsApp message generated yet.</div>
+            </div>
+
+            <div id="mdl-demo-container">
+                <div class="msg-label">💻 Personal Demo Page URL</div>
+                <a href="#" id="mdl-demo-url" target="_blank" style="color: #38bdf8; font-weight: 700; font-size: 0.9rem;">
+                    Preview Demo Site
+                </a>
+            </div>
+
+            <div style="display: flex; align-items: center; justify-content: space-between; background: rgba(37, 211, 102, 0.08); border: 1px solid rgba(37, 211, 102, 0.25); border-radius: 8px; padding: 0.6rem 0.9rem; font-size: 0.82rem;">
+                <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; color: #86efac;">
+                    <input type="checkbox" id="mdl-chk-auto-wa" checked style="accent-color: #22c55e; width: 16px; height: 16px;">
+                    <span>📲 <strong>Auto-open WhatsApp message</strong> when I click Approve</span>
+                </label>
+                <button type="button" class="btn-whatsapp" id="mdl-btn-wa-direct" style="padding: 0.35rem 0.8rem; font-size: 0.78rem;">
+                    💬 Open in WhatsApp
+                </button>
+            </div>
+
+            <div style="display: flex; gap: 0.75rem; margin-top: 0.5rem;">
+                <button class="btn-approve" id="mdl-btn-approve" style="flex: 1.5; height: 42px; font-size: 0.88rem;">✅ Approve & Dispatch</button>
+                <button class="btn-reject" id="mdl-btn-reject" style="flex: 1; height: 42px;">❌ Reject Lead</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentLeadId = null;
+
+        function filterByMetric(type) {
+            // Remove active-filter class from all metric cards
+            document.querySelectorAll('.metric-card').forEach(c => c.classList.remove('active-filter'));
+
+            const cards = document.querySelectorAll('.metric-card');
+            const map = { 'all': 0, 'hot': 1, 'warm': 2, 'demos': 3, 'pending': 4, 'sent': 5 };
+            if (map[type] !== undefined && cards[map[type]]) {
+                cards[map[type]].classList.add('active-filter');
+            }
+
+            if (type === 'pending') {
+                showTab('approval');
+                return;
+            }
+
+            showTab('explorer');
+
+            const badge = document.getElementById('explorer-filter-badge');
+            const nameEl = document.getElementById('filter-name-text');
+
+            const labels = {
+                'all': 'All Discovered Leads',
+                'hot': '🔥 HOT Leads (Score ≥70)',
+                'warm': '⚡ WARM Leads (Score 45–69)',
+                'demos': '💻 Demo Ready Previews',
+                'sent': '📬 Outreach Sent / Dry Run'
+            };
+
+            if (type === 'all') {
+                if (badge) badge.style.display = 'none';
+            } else {
+                if (badge) {
+                    badge.style.display = 'inline-flex';
+                    if (nameEl) nameEl.textContent = labels[type] || type.toUpperCase();
+                }
+            }
+
+            const rows = document.querySelectorAll('#explorer-table-body tr');
+            rows.forEach(row => {
+                const tier = (row.getAttribute('data-tier') || '').toLowerCase();
+                const demo = (row.getAttribute('data-demo') || '').toLowerCase();
+                const demoUrl = (row.getAttribute('data-demo-url') || '').toLowerCase();
+                const approval = (row.getAttribute('data-approval') || '').toLowerCase();
+                const status = (row.getAttribute('data-status') || '').toLowerCase();
+                const emailStatus = (row.getAttribute('data-email-status') || '').toLowerCase();
+
+                let show = false;
+                if (type === 'all') {
+                    show = true;
+                } else if (type === 'hot') {
+                    show = (tier === 'hot');
+                } else if (type === 'warm') {
+                    show = (tier === 'warm');
+                } else if (type === 'demos') {
+                    show = (demo === 'ready' || demoUrl.length > 5);
+                } else if (type === 'sent') {
+                    show = (status === 'sent' || status === 'dry_run_sent' || emailStatus === 'sent' || emailStatus === 'dry_run_sent');
+                }
+
+                row.style.display = show ? '' : 'none';
+            });
+        }
+
+        function showTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+
+            // Show selected tab
+            const targetTab = document.getElementById(`tab-${tabName}`);
+            const targetNav = document.getElementById(`nav-${tabName}`);
+            if (targetTab) targetTab.classList.add('active');
+            if (targetNav) targetNav.classList.add('active');
+        }
+
+        function generateFallbackMessages(lead) {
+            const name = lead.business_name || 'Business';
+            const city = lead.city || 'your city';
+            const demoUrl = lead.demo_url || `http://localhost:8000/preview/${name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${city.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
+            const ws = (lead.website_status || '').toUpperCase();
+
+            let emailMsg = "";
+            let waMsg = "";
+
+            if (ws === "NO_WEBSITE") {
+                emailMsg = `Subject: Quick Web Proposal for ${name}\n\nHi ${name} Team,\n\nI noticed ${name} is doing great in ${city}, but doesn't have an official website yet. A clean, mobile-responsive site would help local customers find and book with you faster.\n\nI created a quick preview website for you: ${demoUrl}\n\nWould you be open to a 2-minute chat this week?\n\nBest regards,\nWeb Automation Consultant`;
+                waMsg = `Hi ${name} team! I noticed you don't have an official website yet. A clean site could help local customers find and choose you faster. I created a quick preview for you here: ${demoUrl}. Would you like a 2-minute video walkthrough?`;
+            } else if (ws === "BROKEN_WEBSITE") {
+                emailMsg = `Subject: Quick Fix for ${name} Website\n\nHi ${name} Team,\n\nI noticed your website seems to be experiencing issues. I built a fresh modern website preview for ${name} to get your web presence back up: ${demoUrl}\n\nWould you be open to a quick call to check it out?\n\nBest regards,\nWeb Automation Consultant`;
+                waMsg = `Hi ${name} team! I noticed your website seems to be down right now. I built a quick modern preview for you here: ${demoUrl}. Would you be open to a quick chat to get it running smoothly?`;
+            } else {
+                emailMsg = `Subject: Web Experience Upgrade for ${name}\n\nHi ${name} Team,\n\nI came across ${name} in ${city}. We created a personalized website concept tailored specifically for your business: ${demoUrl}\n\nWould you have 5 minutes for a quick feedback call?\n\nBest regards,\nWeb Automation Consultant`;
+                waMsg = `Hi ${name} team! I built a quick web preview for ${name} here: ${demoUrl}. Would you be open to a quick 2-minute feedback call?`;
+            }
+
+            return { emailMsg, waMsg, demoUrl };
+        }
+
+        function getDirectWhatsAppUrl(lead) {
+            if (!lead || !lead.phone) return "";
+            let digits = lead.phone.replace(/[^0-9]/g, '');
+            if (digits.length === 10) digits = '91' + digits;
+            if (!digits) return "";
+            
+            const fallback = generateFallbackMessages(lead);
+            const demoLinkUrl = lead.demo_url || fallback.demoUrl;
+            let waText = lead.whatsapp_message && lead.whatsapp_message.length > 5 ? lead.whatsapp_message : fallback.waMsg;
+            
+            // Clean placeholders and ensure demo URL is inside WhatsApp message
+            waText = waText.replace(/\{\{DEMO_URL\}\}/g, demoLinkUrl).replace(/\{DEMO_URL\}/g, demoLinkUrl);
+            if (!waText.includes(demoLinkUrl)) {
+                waText += ` Preview here: ${demoLinkUrl}`;
+            }
+
+            return `https://api.whatsapp.com/send?phone=${digits}&text=${encodeURIComponent(waText)}`;
+        }
+
+        function sendDirectWhatsApp(lead) {
+            const url = getDirectWhatsAppUrl(lead);
+            if (!url) {
+                alert(`No valid phone number found for ${lead.business_name || 'this lead'}.`);
+                return;
+            }
+            window.open(url, '_blank');
+        }
+
+        function openOutreachModal(lead) {
+            currentLeadId = lead.lead_id;
+            const fallback = generateFallbackMessages(lead);
+            const demoLinkUrl = lead.demo_url || fallback.demoUrl;
+
+            let emailText = lead.email_message && lead.email_message.length > 5 ? lead.email_message : fallback.emailMsg;
+            let waText = lead.whatsapp_message && lead.whatsapp_message.length > 5 ? lead.whatsapp_message : fallback.waMsg;
+
+            // Replace any {DEMO_URL} placeholders with real demo URL
+            emailText = emailText.replace(/\{\{DEMO_URL\}\}/g, demoLinkUrl).replace(/\{DEMO_URL\}/g, demoLinkUrl);
+            waText = waText.replace(/\{\{DEMO_URL\}\}/g, demoLinkUrl).replace(/\{DEMO_URL\}/g, demoLinkUrl);
+
+            // Ensure demo URL is explicitly in email text
+            if (!emailText.includes(demoLinkUrl)) {
+                emailText += `\n\nPreview website: ${demoLinkUrl}`;
+            }
+            // Ensure demo URL is explicitly in WhatsApp text
+            if (!waText.includes(demoLinkUrl)) {
+                waText += ` Preview here: ${demoLinkUrl}`;
+            }
+
+            document.getElementById('mdl-business-name').textContent = lead.business_name + " — Outreach Copy";
+            document.getElementById('mdl-reason').textContent = `Score: ${lead.lead_score}/100 (${lead.lead_tier || 'LOW'}) | ${lead.qualification_reason || 'Qualified B2B prospect'}`;
+            
+            document.getElementById('mdl-email-msg').textContent = emailText;
+            document.getElementById('mdl-whatsapp-msg').textContent = waText;
+            
+            const demoLink = document.getElementById('mdl-demo-url');
+            demoLink.href = demoLinkUrl;
+            demoLink.textContent = demoLinkUrl;
+            document.getElementById('mdl-demo-container').style.display = 'block';
+
+            // Direct WhatsApp Button in modal
+            const waDirectBtn = document.getElementById('mdl-btn-wa-direct');
+            if (waDirectBtn) {
+                waDirectBtn.onclick = () => sendDirectWhatsApp(lead);
+            }
+
+            document.getElementById('mdl-btn-approve').onclick = () => approveLead(currentLeadId, lead);
+            document.getElementById('mdl-btn-reject').onclick = () => rejectLead(currentLeadId);
+
+            document.getElementById('modal-outreach').style.display = 'flex';
+        }
+
+
+        async function approveAllLeads() {
+            if (!confirm('Are you sure you want to Auto-Approve and dispatch outreach for all pending leads?')) return;
+
+            const toast = document.getElementById('modal-status-toast') || document.createElement('div');
+            toast.id = 'modal-status-toast';
+            toast.style.position = 'fixed';
+            toast.style.bottom = '24px';
+            toast.style.right = '24px';
+            toast.style.background = '#0f172a';
+            toast.style.border = '1px solid #10b981';
+            toast.style.borderRadius = '12px';
+            toast.style.padding = '1rem 1.5rem';
+            toast.style.color = '#fff';
+            toast.style.fontSize = '0.9rem';
+            toast.style.boxShadow = '0 10px 30px rgba(0,0,0,0.5)';
+            toast.style.zIndex = '1000';
+            toast.innerHTML = `<div>⏳ <strong>Auto-Approving & Dispatching Outreach...</strong></div>`;
+            document.body.appendChild(toast);
+
+            try {
+                const res = await fetch('/api/approve-all', { method: 'POST' });
+                const data = await res.json();
+                if (res.ok) {
+                    toast.innerHTML = `<div>✅ <strong>${data.message}</strong></div>`;
+                    setTimeout(() => location.reload(), 1500);
+                } else {
+                    alert(`Error: ${data.message}`);
+                }
+            } catch (err) {
+                alert(`Error approving leads: ${err}`);
+            }
+        }
+
+        async function toggleAutoPilot() {
+            const currentText = document.getElementById('autopilot-status-text').textContent.trim();
+            const willEnable = currentText !== 'ON';
+
+            const res = await fetch(`/api/toggle-autopilot?enabled=${willEnable}`, { method: 'POST' });
+            if (res.ok) {
+                const data = await res.json();
+                document.getElementById('autopilot-status-text').textContent = data.auto_pilot ? 'ON' : 'OFF';
+                const btn = document.getElementById('btn-mode-autopilot');
+                if (data.auto_pilot) {
+                    btn.classList.add('active-dry');
+                    btn.classList.remove('inactive');
+                } else {
+                    btn.classList.remove('active-dry');
+                    btn.classList.add('inactive');
+                }
+            }
+        }
+
+        function closeModal() {
+            document.getElementById('modal-outreach').style.display = 'none';
+        }
+
+        async function approveLead(leadId, leadObj = null) {
+            // Check auto-open WhatsApp preference
+            const autoWaCheckbox = document.getElementById('mdl-chk-auto-wa');
+            const shouldOpenWa = autoWaCheckbox ? autoWaCheckbox.checked : true;
+
+            const res = await fetch(`/api/approve/${leadId}`, { method: 'POST' });
+            if (res.ok) {
+                const data = await res.json();
+                
+                // Open WhatsApp with client if requested
+                const waUrl = data.whatsapp_url || (leadObj ? getDirectWhatsAppUrl(leadObj) : '');
+                if (shouldOpenWa && waUrl) {
+                    window.open(waUrl, '_blank');
+                }
+
+                closeModal();
+                location.reload();
+            } else {
+                const err = await res.json();
+                alert(`Error approving lead: ${err.message || 'Unknown error'}`);
+            }
+        }
+
+        async function rejectLead(leadId) {
+            const res = await fetch(`/api/reject/${leadId}`, { method: 'POST' });
+            if (res.ok) {
+                closeModal();
+                location.reload();
+            }
+        }
+
+        // ─── City Selector Functions ─────────────────────────────────────────
+        function toggleCityDropdown() {
+            const menu = document.getElementById('city-dropdown-menu');
+            const isOpen = menu.classList.contains('open');
+            // Close category dropdown if open
+            const catMenu = document.getElementById('cat-dropdown-menu');
+            if (catMenu) catMenu.classList.remove('open');
+
+            menu.classList.toggle('open');
+            if (!isOpen) {
+                const searchInput = document.getElementById('city-search-input');
+                if (searchInput) {
+                    searchInput.value = '';
+                    filterCityDropdown('');
+                    setTimeout(() => searchInput.focus(), 50);
+                }
+            }
+        }
+
+        function selectCity(cityName) {
+            cityName = cityName.trim();
+            if (!cityName) return;
+
+            document.getElementById('city-trigger-label').textContent = cityName;
+            document.getElementById('hdr-city').value = cityName;
+
+            // Highlight matching pill
+            document.querySelectorAll('.city-pill').forEach(pill => {
+                pill.classList.toggle('active', pill.textContent.trim().toLowerCase() === cityName.toLowerCase());
+            });
+
+            document.getElementById('city-dropdown-menu').classList.remove('open');
+            document.getElementById('city-trigger').style.borderColor = 'rgba(99, 102, 241, 0.6)';
+        }
+
+        function filterCityDropdown(query) {
+            query = query.toLowerCase().trim();
+            const items = document.querySelectorAll('.city-item');
+            
+            items.forEach(item => {
+                const text = item.textContent.toLowerCase();
+                if (!query || text.includes(query)) {
+                    item.style.display = 'flex';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+
+            const customHint = document.getElementById('city-custom-hint');
+            if (customHint) {
+                if (query.length > 0) {
+                    customHint.style.display = 'block';
+                    customHint.innerHTML = `👉 Pick custom city: <strong style="color: #a5b4fc;">"${query}"</strong>`;
+                    customHint.onclick = () => selectCity(query.charAt(0).toUpperCase() + query.slice(1));
+                } else {
+                    customHint.style.display = 'none';
+                }
+            }
+
+            document.querySelectorAll('.city-group').forEach(group => {
+                const visibleItems = group.querySelectorAll('.city-item:not([style*="display: none"])');
+                group.style.display = visibleItems.length > 0 ? 'block' : 'none';
+            });
+        }
+
+        // ─── Category Multi-Select Dropdown Functions ───────────────────────
+        function toggleCategoryDropdown() {
+            // Close city dropdown if open
+            const cityMenu = document.getElementById('city-dropdown-menu');
+            if (cityMenu) cityMenu.classList.remove('open');
+
+            const menu = document.getElementById('cat-dropdown-menu');
+            menu.classList.toggle('open');
+        }
+
+        // Close dropdowns when clicking outside
+        document.addEventListener('click', function(e) {
+            const cityWrapper = document.getElementById('city-dropdown-wrapper');
+            if (cityWrapper && !cityWrapper.contains(e.target)) {
+                const cityMenu = document.getElementById('city-dropdown-menu');
+                if (cityMenu) cityMenu.classList.remove('open');
+            }
+            const catWrapper = document.getElementById('cat-dropdown-wrapper');
+            if (catWrapper && !catWrapper.contains(e.target)) {
+                const catMenu = document.getElementById('cat-dropdown-menu');
+                if (catMenu) catMenu.classList.remove('open');
+            }
+        });
+
+        function getSelectedCategories() {
+            const checkboxes = document.querySelectorAll('#cat-dropdown-menu input[type="checkbox"]:checked');
+            return Array.from(checkboxes).map(cb => cb.value);
+        }
+
+        function updateCategorySelection() {
+            const selected = getSelectedCategories();
+            const label = document.getElementById('cat-trigger-label');
+            const hidden = document.getElementById('hdr-category');
+            if (selected.length === 0) {
+                label.textContent = 'Select category...';
+                hidden.value = '';
+            } else if (selected.length === 1) {
+                label.textContent = selected[0];
+                hidden.value = selected[0];
+            } else {
+                label.textContent = `${selected.length} categories`;
+                hidden.value = selected[0]; // primary for single-stage calls
+            }
+            // Color trigger if any selected
+            document.getElementById('cat-trigger').style.borderColor = selected.length > 0 ? 'rgba(251,191,36,0.5)' : '';
+        }
+
+        function selectAllCategories() {
+            document.querySelectorAll('#cat-dropdown-menu input[type="checkbox"]').forEach(cb => cb.checked = true);
+            updateCategorySelection();
+        }
+
+        function clearCategories() {
+            document.querySelectorAll('#cat-dropdown-menu input[type="checkbox"]').forEach(cb => cb.checked = false);
+            updateCategorySelection();
+        }
+        // ────────────────────────────────────────────────────────────────────
+
+        async function runStage(stageName) {
+            const city = document.getElementById('hdr-city')?.value || 'Vadodara';
+            const selectedCats = getSelectedCategories();
+            const categories = selectedCats.length > 0 ? selectedCats : ['dental clinics'];
+            const category = categories[0] || document.getElementById('hdr-category')?.value || 'dental clinics';
+
+            const logBox = document.getElementById('console-stream');
+            if (logBox) {
+                logBox.innerHTML += `<div class="log-line info">⏳ Launching stage '${stageName}' for ${category} in ${city}...</div>`;
+                logBox.scrollTop = logBox.scrollHeight;
+            }
+
+            // Show execution modal popup on screen so output is visible
+            let statusModal = document.getElementById('modal-status-toast');
+            if (!statusModal) {
+                statusModal = document.createElement('div');
+                statusModal.id = 'modal-status-toast';
+                statusModal.style.position = 'fixed';
+                statusModal.style.bottom = '24px';
+                statusModal.style.right = '24px';
+                statusModal.style.background = '#0f172a';
+                statusModal.style.border = '1px solid #6366f1';
+                statusModal.style.borderRadius = '12px';
+                statusModal.style.padding = '1rem 1.5rem';
+                statusModal.style.color = '#fff';
+                statusModal.style.fontSize = '0.9rem';
+                statusModal.style.boxShadow = '0 10px 30px rgba(0,0,0,0.5)';
+                statusModal.style.zIndex = '1000';
+                statusModal.style.transition = 'all 0.3s ease';
+                document.body.appendChild(statusModal);
+            }
+
+            statusModal.style.display = 'block';
+            statusModal.style.borderColor = '#6366f1';
+            statusModal.innerHTML = `
+                <div style="display: flex; align-items: center; gap: 0.75rem;">
+                    <div style="font-size: 1.2rem; animation: spin 1s linear infinite;">⏳</div>
+                    <div>
+                        <strong style="color: #818cf8; display: block;">Executing ${stageName.toUpperCase()}...</strong>
+                        <span style="font-size: 0.8rem; color: #94a3b8;">Processing ${category} in ${city}</span>
+                    </div>
+                </div>
+            `;
+
+            try {
+                const res = await fetch(`/api/stage/${stageName}?city=${encodeURIComponent(city)}&category=${encodeURIComponent(category)}`, {
+                    method: 'POST'
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    statusModal.style.borderColor = '#10b981';
+                    statusModal.innerHTML = `
+                        <div style="display: flex; align-items: flex-start; gap: 0.75rem;">
+                            <div style="font-size: 1.2rem; color: #10b981;">✅</div>
+                            <div>
+                                <strong style="color: #10b981; display: block;">Stage Complete!</strong>
+                                <span style="font-size: 0.85rem; color: #f8fafc;">${data.message}</span>
+                            </div>
+                        </div>
+                    `;
+
+                    // Update live metrics on screen if returned
+                    if (data.stats) {
+                        const totalEl = document.getElementById('stat-total');
+                        if (totalEl) totalEl.textContent = data.stats.total_leads;
+                        const pendingNav = document.getElementById('nav-pending-count');
+                        if (pendingNav) pendingNav.textContent = data.stats.pending_approval;
+                    }
+
+                    if (logBox) {
+                        logBox.innerHTML += `<div class="log-line success">✅ ${data.message}</div>`;
+                        logBox.scrollTop = logBox.scrollHeight;
+                    }
+
+                    setTimeout(() => {
+                        location.reload();
+                    }, 2000);
+                } else {
+                    statusModal.style.borderColor = '#ef4444';
+                    statusModal.innerHTML = `
+                        <div style="color: #ef4444;">
+                            <strong>❌ Error Executing Stage</strong>
+                            <p style="font-size: 0.8rem;">${data.message || 'Execution failed'}</p>
+                        </div>
+                    `;
+                }
+            } catch (err) {
+                statusModal.style.borderColor = '#ef4444';
+                statusModal.innerHTML = `
+                    <div style="color: #ef4444;">
+                        <strong>❌ Request Failed</strong>
+                        <p style="font-size: 0.8rem;">${err.message}</p>
+                    </div>
+                `;
+            }
+        }
+
+        async function triggerFollowups() {
+            let statusModal = document.getElementById('modal-status-toast');
+            if (!statusModal) {
+                statusModal = document.createElement('div');
+                statusModal.id = 'modal-status-toast';
+                statusModal.style.position = 'fixed';
+                statusModal.style.bottom = '24px';
+                statusModal.style.right = '24px';
+                statusModal.style.background = '#0f172a';
+                statusModal.style.border = '1px solid #f97316';
+                statusModal.style.borderRadius = '12px';
+                statusModal.style.padding = '1rem 1.5rem';
+                statusModal.style.color = '#fff';
+                statusModal.style.fontSize = '0.9rem';
+                statusModal.style.boxShadow = '0 10px 30px rgba(0,0,0,0.5)';
+                statusModal.style.zIndex = '1000';
+                statusModal.style.transition = 'all 0.3s ease';
+                document.body.appendChild(statusModal);
+            }
+
+            statusModal.style.display = 'block';
+            statusModal.style.borderColor = '#f97316';
+            statusModal.innerHTML = `
+                <div style="display: flex; align-items: center; gap: 0.75rem;">
+                    <div style="font-size: 1.2rem; animation: spin 1s linear infinite;">🔄</div>
+                    <div>
+                        <strong style="color: #f97316; display: block;">Evaluating Follow-ups...</strong>
+                        <span style="font-size: 0.8rem; color: #94a3b8;">Checking non-responding leads & generating AI copy</span>
+                    </div>
+                </div>
+            `;
+
+            try {
+                const res = await fetch('/api/followups?force=true', { method: 'POST' });
+                const data = await res.json();
+                if (res.ok) {
+                    statusModal.style.borderColor = '#10b981';
+                    statusModal.innerHTML = `
+                        <div style="display: flex; align-items: flex-start; gap: 0.75rem;">
+                            <div style="font-size: 1.2rem; color: #10b981;">✅</div>
+                            <div>
+                                <strong style="color: #10b981; display: block;">Follow-up Engine Complete!</strong>
+                                <span style="font-size: 0.85rem; color: #f8fafc;">${data.message || 'Generated follow-up messages.'}</span>
+                            </div>
+                        </div>
+                    `;
+
+                    setTimeout(() => {
+                        showTab('approval');
+                        location.reload();
+                    }, 2000);
+                } else {
+                    statusModal.style.borderColor = '#ef4444';
+                    statusModal.innerHTML = `<div style="color: #ef4444;"><strong>❌ Error</strong><p style="font-size: 0.8rem;">${data.message || 'Failed to evaluate follow-ups.'}</p></div>`;
+                }
+            } catch (err) {
+                statusModal.style.borderColor = '#ef4444';
+                statusModal.innerHTML = `<div style="color: #ef4444;"><strong>❌ Failed</strong><p style="font-size: 0.8rem;">${err.message}</p></div>`;
+            }
+        }
+
+        async function fetchLogs() {
+            try {
+                const res = await fetch('/api/logs');
+                const data = await res.json();
+                const boxes = [document.getElementById('console-stream'), document.getElementById('full-console-stream')];
+                boxes.forEach(box => {
+                    if (!box) return;
+                    box.innerHTML = '';
+                    data.logs.forEach(log => {
+                        const cls = log.includes('ERROR') ? 'error' : (log.includes('SUCCESS') || log.includes('OK') ? 'success' : 'info');
+                        box.innerHTML += `<div class="log-line ${cls}">${log}</div>`;
+                    });
+                    box.scrollTop = box.scrollHeight;
+                });
+            } catch (e) {}
+        }
+
+        document.addEventListener('DOMContentLoaded', fetchLogs);
+
+        async function syncToSheets() {
+            let statusModal = document.getElementById('modal-status-toast');
+            if (!statusModal) {
+                statusModal = document.createElement('div');
+                statusModal.id = 'modal-status-toast';
+                statusModal.style.cssText = 'position:fixed;bottom:24px;right:24px;background:#0f172a;border:1px solid #34a853;border-radius:12px;padding:1rem 1.5rem;color:#fff;font-size:0.9rem;box-shadow:0 10px 30px rgba(0,0,0,0.5);z-index:1000;transition:all 0.3s ease;max-width:340px;';
+                document.body.appendChild(statusModal);
+            }
+
+            statusModal.style.display = 'block';
+            statusModal.style.borderColor = '#34a853';
+            statusModal.innerHTML = `
+                <div style="display:flex;align-items:center;gap:0.75rem;">
+                    <div style="font-size:1.4rem;">📊</div>
+                    <div>
+                        <strong style="color:#34a853;display:block;">Syncing to Google Sheets...</strong>
+                        <span style="font-size:0.8rem;color:#94a3b8;">This may take 10–30 seconds</span>
+                    </div>
+                </div>`;
+
+            try {
+                const res = await fetch('/api/sync-sheets', { method: 'POST' });
+                const data = await res.json();
+
+                if (res.ok) {
+                    statusModal.style.borderColor = '#10b981';
+                    statusModal.innerHTML = `
+                        <div style="display:flex;align-items:flex-start;gap:0.75rem;">
+                            <div style="font-size:1.2rem;color:#10b981;">✅</div>
+                            <div>
+                                <strong style="color:#10b981;display:block;">Google Sheets Sync Complete!</strong>
+                                <span style="font-size:0.85rem;color:#f8fafc;">${data.message}</span>
+                            </div>
+                        </div>`;
+                    setTimeout(() => { statusModal.style.display = 'none'; }, 5000);
+                } else {
+                    statusModal.style.borderColor = '#ef4444';
+                    statusModal.innerHTML = `
+                        <div style="color:#ef4444;">
+                            <strong>❌ Sheets Sync Failed</strong>
+                            <p style="font-size:0.8rem;margin-top:4px;">${data.message}</p>
+                            <p style="font-size:0.75rem;margin-top:4px;color:#94a3b8;">See setup instructions below.</p>
+                        </div>`;
+                }
+            } catch (err) {
+                statusModal.style.borderColor = '#ef4444';
+                statusModal.innerHTML = `<div style="color:#ef4444;"><strong>❌ Request Failed</strong><p style="font-size:0.8rem;">${err.message}</p></div>`;
+            }
+        }
+
+        async function setSystemMode(mode) {
+            try {
+                const res = await fetch(`/api/set-mode/${mode}`, { method: 'POST' });
+                const data = await res.json();
+                
+                const btnDry = document.getElementById('btn-mode-dry');
+                const btnLive = document.getElementById('btn-mode-live');
+
+                if (data.dry_run) {
+                    if (btnDry) btnDry.className = 'mode-switch-btn active-dry';
+                    if (btnLive) btnLive.className = 'mode-switch-btn inactive';
+                    alert('🛡️ System switched to DRY RUN Mode! Outreach will be safely simulated without sending real emails/messages.');
+                } else {
+                    if (btnDry) btnDry.className = 'mode-switch-btn inactive';
+                    if (btnLive) btnLive.className = 'mode-switch-btn active-live';
+                    alert('🚀 System switched to LIVE DISPATCH Mode! Approving leads will send REAL emails via Gmail SMTP to recipients.');
+                }
+            } catch (err) {
+                alert('Error setting mode: ' + err.message);
+            }
+        }
+
+        async function loadFollowups() {
+            try {
+                const res = await fetch('/api/followups/list');
+                const data = await res.json();
+
+                const sentBody = document.getElementById('sent-followups-body');
+                const upcomingBody = document.getElementById('upcoming-followups-body');
+                const sentCount = document.getElementById('sent-fu-count');
+                const upcomingCount = document.getElementById('upcoming-fu-count');
+
+                // Render sent follow-ups
+                const sent = data.sent_followups || [];
+                sentCount.textContent = `${sent.length} record(s)`;
+                if (sent.length === 0) {
+                    sentBody.innerHTML = `<tr><td colspan="6" style="text-align:center; color: var(--text-muted); padding: 2rem;">No follow-ups dispatched yet. They will appear here automatically after Day 3 and Day 7.</td></tr>`;
+                } else {
+                    sentBody.innerHTML = sent.map(fu => {
+                        const lastSent = fu.last_followup_at ? new Date(fu.last_followup_at).toLocaleDateString('en-IN', {day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'}) : 'N/A';
+                        const fuBadge = fu.followup_count >= 2
+                            ? `<span style="background: rgba(249,115,22,0.2); color: #f97316; padding: 2px 8px; border-radius: 999px; font-size: 0.72rem; font-weight: 700;">Follow-up #${fu.followup_count}</span>`
+                            : `<span style="background: rgba(251,191,36,0.2); color: #fbbf24; padding: 2px 8px; border-radius: 999px; font-size: 0.72rem; font-weight: 700;">Follow-up #${fu.followup_count}</span>`;
+                        const statusColor = fu.email_status === 'SENT' ? '#10b981' : '#94a3b8';
+                        return `
+                            <tr>
+                                <td><strong>${fu.business_name}</strong></td>
+                                <td style="font-size: 0.8rem; color: var(--text-muted);">${fu.email || 'N/A'}</td>
+                                <td>${fuBadge}</td>
+                                <td><span style="color: ${statusColor}; font-size: 0.8rem; font-weight: 600;">${fu.email_status || fu.status}</span></td>
+                                <td style="font-size: 0.8rem; color: var(--text-muted);">${lastSent}</td>
+                                <td>
+                                    <button class="btn-preview" onclick='showFuPreview(${JSON.stringify(fu.email_message || "")}, ${JSON.stringify(fu.whatsapp_message || "")})'>
+                                        👁️ Preview
+                                    </button>
+                                </td>
+                            </tr>
+                        `;
+                    }).join('');
+                }
+
+                // Render upcoming follow-ups
+                const upcoming = data.upcoming_followups || [];
+                upcomingCount.textContent = `${upcoming.length} lead(s) pending`;
+                if (upcoming.length === 0) {
+                    upcomingBody.innerHTML = `<tr><td colspan="6" style="text-align:center; color: var(--text-muted); padding: 2rem;">No leads currently awaiting a scheduled follow-up.</td></tr>`;
+                } else {
+                    upcomingBody.innerHTML = upcoming.map(fu => {
+                        const sentDate = fu.last_contacted_at ? new Date(fu.last_contacted_at) : null;
+                        const sentStr = sentDate ? sentDate.toLocaleDateString('en-IN', {day: '2-digit', month: 'short'}) : 'N/A';
+                        const daysSince = sentDate ? Math.floor((Date.now() - sentDate.getTime()) / 86400000) : '?';
+                        const daysUntilFU1 = sentDate ? Math.max(0, 3 - daysSince) : '?';
+                        const nextFU = daysUntilFU1 === 0 ? '⚡ Due now!' : `In ${daysUntilFU1} day(s)`;
+                        const statusColor = fu.email_status === 'SENT' ? '#10b981' : '#94a3b8';
+                        return `
+                            <tr>
+                                <td><strong>${fu.business_name}</strong></td>
+                                <td style="font-size: 0.8rem; color: var(--text-muted);">${fu.email || 'N/A'}</td>
+                                <td style="font-size: 0.8rem; color: var(--text-muted);">${sentStr}</td>
+                                <td style="font-size: 0.8rem; color: #fbbf24; font-weight: 600;">${nextFU}</td>
+                                <td style="font-size: 0.8rem; color: var(--text-muted);">${daysSince} days</td>
+                                <td><span style="color: ${statusColor}; font-size: 0.8rem;">${fu.email_status}</span></td>
+                            </tr>
+                        `;
+                    }).join('');
+                }
+
+                // Update badge count
+                const totalFU = sent.length + upcoming.length;
+                const navBadge = document.getElementById('nav-followup-count');
+                if (navBadge) navBadge.textContent = totalFU > 0 ? totalFU : 'Auto';
+
+            } catch (err) {
+                console.error('Error loading follow-ups:', err);
+            }
+        }
+
+        function showFuPreview(emailMsg, waMsg) {
+            const area = document.getElementById('fu-preview-area');
+            const emailPre = document.getElementById('fu-email-preview');
+            const waPre = document.getElementById('fu-wa-preview');
+            emailPre.textContent = emailMsg || '(No email message available)';
+            waPre.textContent = waMsg || '(No WhatsApp message available)';
+            area.style.display = 'block';
+            area.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        // ─── Outreach Delivery Tracker Functions ─────────────────────────────
+        async function loadOutreachTracker() {
+            try {
+                const res = await fetch('/api/outreach-tracker');
+                const data = await res.json();
+
+                const summary = data.summary || {};
+                const totalDelivered = (summary.total_email_delivered || 0) + (summary.total_whatsapp_delivered || 0);
+                const totalFailed = (summary.total_email_failed || 0) + (summary.total_whatsapp_failed || 0);
+                const totalDryRun = (summary.total_email_dry_run || 0) + (summary.total_whatsapp_dry_run || 0);
+
+                document.getElementById('trk-stat-delivered').textContent = totalDelivered;
+                document.getElementById('trk-stat-failed').textContent = totalFailed;
+                document.getElementById('trk-stat-dryrun').textContent = totalDryRun;
+                document.getElementById('trk-stat-pending').textContent = summary.total_not_sent || 0;
+
+                const navDel = document.getElementById('nav-delivered-count');
+                if (navDel) navDel.textContent = `${totalDelivered} Delivered`;
+
+                // Render Delivered Table
+                const deliveredLeads = (data.email_delivered || []).concat(data.whatsapp_delivered || []);
+                const uniqueDelivered = [];
+                const seenIds = new Set();
+                deliveredLeads.forEach(l => {
+                    if (!seenIds.has(l.lead_id)) {
+                        seenIds.add(l.lead_id);
+                        uniqueDelivered.push(l);
+                    }
+                });
+
+                document.getElementById('cnt-delivered').textContent = uniqueDelivered.length;
+                const delTbody = document.getElementById('trk-tbl-delivered');
+                if (uniqueDelivered.length === 0) {
+                    delTbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color: var(--text-muted); padding: 2rem;">No delivered messages yet. Switch system to <strong>🚀 LIVE DISPATCH</strong> mode to send real outreach.</td></tr>`;
+                } else {
+                    delTbody.innerHTML = uniqueDelivered.map(l => {
+                        const dateStr = l.last_contacted_at ? new Date(l.last_contacted_at).toLocaleDateString('en-IN', {day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit'}) : 'N/A';
+                        const waBtn = l.phone ? `<button class="btn-whatsapp" onclick='sendDirectWhatsApp(${JSON.stringify(l)})'>💬 WhatsApp Chat</button>` : '';
+                        let waBadge = `<span style="color: #94a3b8; font-weight:600;">${l.whatsapp_status || 'NOT_SENT'}</span>`;
+                        if (l.whatsapp_status === 'READ') {
+                            waBadge = `<span style="color: #38bdf8; font-weight:700; background:rgba(56,189,248,0.15); padding:2px 6px; border-radius:4px;">✓✓ Read (Blue Tick)</span>`;
+                        } else if (l.whatsapp_status === 'DELIVERED') {
+                            waBadge = `<span style="color: #10b981; font-weight:700; background:rgba(16,185,129,0.15); padding:2px 6px; border-radius:4px;">✓✓ Delivered (Double Tick)</span>`;
+                        } else if (l.whatsapp_status === 'SENT') {
+                            waBadge = `<span style="color: #10b981; font-weight:700;">✓ Sent (Single Tick)</span>`;
+                        } else if (l.whatsapp_status === 'REPLIED') {
+                            waBadge = `<span style="color: #f59e0b; font-weight:800; background:rgba(245,158,11,0.2); padding:2px 6px; border-radius:4px;">🔥 Replied!</span>`;
+                        } else if (l.whatsapp_status === 'WA_DIRECT_READY') {
+                            waBadge = `<span style="color: #10b981; font-weight:700;">✓ WA Ready</span>`;
+                        }
+                        const emailBadge = l.email_status === 'SENT'
+                            ? `<span style="color: #10b981; font-weight:700;">✅ Email Sent</span>`
+                            : `<span style="color: #94a3b8; font-weight:600;">${l.email_status || 'NO_EMAIL'}</span>`;
+                        return `
+                            <tr>
+                                <td><strong>${l.business_name}</strong></td>
+                                <td>${l.city} <small style="color:var(--text-muted);">(${l.category})</small></td>
+                                <td>${emailBadge}</td>
+                                <td>${waBadge}</td>
+                                <td style="font-size:0.8rem; color:var(--text-muted);">${dateStr}</td>
+                                <td>${waBtn}</td>
+                            </tr>
+                        `;
+                    }).join('');
+                }
+
+                // Render Failed Table
+                const failedLeads = (data.email_failed || []).concat(data.whatsapp_failed || []);
+                const uniqueFailed = [];
+                const seenFailIds = new Set();
+                failedLeads.forEach(l => {
+                    if (!seenFailIds.has(l.lead_id)) {
+                        seenFailIds.add(l.lead_id);
+                        uniqueFailed.push(l);
+                    }
+                });
+
+                document.getElementById('cnt-failed').textContent = uniqueFailed.length;
+                const failTbody = document.getElementById('trk-tbl-failed');
+                if (uniqueFailed.length === 0) {
+                    failTbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color: var(--text-muted); padding: 2rem;">🎉 No failed outreach! All messages delivered smoothly.</td></tr>`;
+                } else {
+                    failTbody.innerHTML = uniqueFailed.map(l => {
+                        const rawErr = l.error_log || '';
+                        let friendlyErr = '⚠️ Unknown failure';
+                        let actionHint = '';
+
+                        if (rawErr.includes('131030') || rawErr.includes('not in allowed list')) {
+                            friendlyErr = '🔒 WhatsApp Test Mode — Number not whitelisted';
+                            actionHint = '<br><small style="color:#94a3b8;">→ Add payment on Meta Developer Console to unlock production access</small>';
+                        } else if (rawErr.includes('131047') || rawErr.includes('template')) {
+                            friendlyErr = '📋 Template required — Freeform message blocked';
+                            actionHint = '<br><small style="color:#94a3b8;">→ Create & approve a message template on Meta Business Manager</small>';
+                        } else if (rawErr.includes('401') || rawErr.includes('OAuthException') || rawErr.includes('token')) {
+                            friendlyErr = '🔑 Invalid/Expired API Token';
+                            actionHint = '<br><small style="color:#94a3b8;">→ Update WHATSAPP_TOKEN in .env with a fresh token</small>';
+                        } else if (rawErr.includes('429') || rawErr.includes('rate limit')) {
+                            friendlyErr = '⏱️ Rate limit hit — Too many messages';
+                            actionHint = '<br><small style="color:#94a3b8;">→ Wait 1 hour and retry</small>';
+                        } else if (rawErr.includes('NO_EMAIL') || rawErr.includes('no valid phone')) {
+                            friendlyErr = '📵 No contact info available for this lead';
+                        } else if (rawErr.includes('400')) {
+                            friendlyErr = '❌ Invalid phone number format or API error';
+                            actionHint = '<br><small style="color:#94a3b8;">→ Check phone number is valid with country code</small>';
+                        } else if (rawErr.length > 0) {
+                            friendlyErr = '❌ ' + rawErr.substring(0, 80) + (rawErr.length > 80 ? '...' : '');
+                        }
+
+                        // Build WhatsApp Web 1-click URL
+                        let waWebBtn = '';
+                        if (l.phone) {
+                            const rawPhone = l.phone.replace(/\D/g, '');
+                            const waPhone = rawPhone.startsWith('91') ? rawPhone : (rawPhone.length === 10 ? '91' + rawPhone : rawPhone);
+                            const waMsg = l.whatsapp_message || `Hi ${l.business_name}, we've built a free demo website for you. Check it here: ${l.demo_url || ''}`;
+                            const waUrl = `https://web.whatsapp.com/send?phone=${waPhone}&text=${encodeURIComponent(waMsg)}`;
+                            waWebBtn = `<a href="${waUrl}" target="_blank" style="display:inline-flex;align-items:center;gap:6px;background:linear-gradient(135deg,#25d366,#128c7e);color:#fff;font-size:0.78rem;font-weight:700;padding:0.4rem 0.75rem;border-radius:8px;text-decoration:none;border:none;cursor:pointer;margin-top:4px;">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.123.556 4.112 1.528 5.836L0 24l6.335-1.508A11.955 11.955 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-1.89 0-3.66-.497-5.194-1.367l-.372-.22-3.862.919.975-3.763-.242-.387A9.944 9.944 0 012 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>
+                                Send on WhatsApp</a>`;
+                        }
+
+                        return `
+                            <tr>
+                                <td><strong>${l.business_name}</strong></td>
+                                <td>${l.city}</td>
+                                <td style="font-size:0.8rem;">${l.phone || l.email || 'No contact info'}</td>
+                                <td><div style="background:rgba(239,68,68,0.12); color:#f87171; border:1px solid rgba(239,68,68,0.25); border-radius:6px; padding:0.4rem 0.6rem; font-size:0.8rem;">${friendlyErr}${actionHint}</div></td>
+                                <td style="display:flex;flex-direction:column;gap:6px;align-items:flex-start;">
+                                    ${waWebBtn}
+                                </td>
+                            </tr>
+                        `;
+                    }).join('');
+
+
+                }
+
+                // Render Dry Run Table
+                const dryRunLeads = (data.email_dry_run || []).concat(data.whatsapp_dry_run || []);
+                const uniqueDry = [];
+                const seenDryIds = new Set();
+                dryRunLeads.forEach(l => {
+                    if (!seenDryIds.has(l.lead_id)) {
+                        seenDryIds.add(l.lead_id);
+                        uniqueDry.push(l);
+                    }
+                });
+
+                document.getElementById('cnt-dryrun').textContent = uniqueDry.length;
+                const dryTbody = document.getElementById('trk-tbl-dryrun');
+                if (uniqueDry.length === 0) {
+                    dryTbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color: var(--text-muted); padding: 2rem;">No dry run simulated records.</td></tr>`;
+                } else {
+                    dryTbody.innerHTML = uniqueDry.map(l => `
+                        <tr>
+                            <td><strong>${l.business_name}</strong></td>
+                            <td>${l.city}</td>
+                            <td style="font-size:0.8rem; color:var(--text-muted);">${l.email || 'N/A'}</td>
+                            <td style="font-size:0.8rem; color:var(--text-muted);">${l.phone || 'N/A'}</td>
+                            <td><span style="background:rgba(245,158,11,0.2); color:#f59e0b; border:1px solid rgba(245,158,11,0.4); font-size:0.75rem; font-weight:700; padding:0.15rem 0.5rem; border-radius:4px;">DRY_RUN_SENT</span></td>
+                        </tr>
+                    `).join('');
+                }
+
+            } catch (err) {
+                console.error('Error loading outreach tracker:', err);
+            }
+        }
+
+        function filterTrackerSection(sec) {
+            const secs = ['delivered', 'failed', 'dry_run'];
+            secs.forEach(s => {
+                const el = document.getElementById(`trk-sec-${s}`);
+                const btn = document.getElementById(`trk-btn-${s}`);
+                if (el) el.style.display = (s === sec) ? 'block' : 'none';
+                if (btn) {
+                    if (s === sec) {
+                        btn.classList.add('highlight');
+                    } else {
+                        btn.classList.remove('highlight');
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html>
