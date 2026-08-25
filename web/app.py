@@ -23,14 +23,8 @@ from demo.server import preview_lead_page, preview_fallback_page
 
 app = FastAPI(title="Lead Magnet AI - Command Dashboard")
 
-# Mount static public_demos directory for fast 24/7 preview page rendering
-from fastapi.staticfiles import StaticFiles
-public_demos_dir = PROJECT_ROOT / "public_demos" / "preview"
-if public_demos_dir.exists():
-    app.mount("/preview", StaticFiles(directory=str(public_demos_dir), html=True), name="preview")
-
 # Mount demo preview routes on main web app
-app.add_api_route("/preview/{slug}", preview_lead_page, methods=["GET"], response_class=HTMLResponse)
+app.add_api_route("/preview/{slug:path}", preview_lead_page, methods=["GET"], response_class=HTMLResponse)
 app.add_api_route("/preview", preview_fallback_page, methods=["GET"], response_class=HTMLResponse)
 
 BASE_DIR = Path(__file__).resolve().parent

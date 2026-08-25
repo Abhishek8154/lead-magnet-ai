@@ -76,16 +76,17 @@ def find_lead_by_slug_or_id(slug_or_id: str, db: Database) -> Optional[Lead]:
     return None
 
 
-@app.get("/preview/{slug}", response_class=HTMLResponse)
+@app.get("/preview/{slug:path}", response_class=HTMLResponse)
 async def preview_lead_page(request: Request, slug: str):
     """GET /preview/{slug} - Renders preview page for the lead."""
+    clean_slug = (slug or "").rstrip("/").replace(".html", "").split("/")[-1]
     db = Database()
-    lead = find_lead_by_slug_or_id(slug, db)
+    lead = find_lead_by_slug_or_id(clean_slug, db)
 
     if not lead:
         # Fallback to pre-generated static HTML file in public_demos
-        static_html = PROJECT_ROOT / "public_demos" / "preview" / f"{slug}.html"
-        static_index = PROJECT_ROOT / "public_demos" / "preview" / slug / "index.html"
+        static_html = PROJECT_ROOT / "public_demos" / "preview" / f"{clean_slug}.html"
+        static_index = PROJECT_ROOT / "public_demos" / "preview" / clean_slug / "index.html"
         
         if static_html.exists():
             logger.info(f"Serving static pre-generated preview file: '{static_html}'")
@@ -94,8 +95,8 @@ async def preview_lead_page(request: Request, slug: str):
             logger.info(f"Serving static pre-generated index file: '{static_index}'")
             return HTMLResponse(content=static_index.read_text(encoding="utf-8"))
 
-        logger.warning(f"Demo preview page requested for unknown slug: '{slug}'")
-        raise HTTPException(status_code=404, detail=f"Preview page for '{slug}' not found.")
+        logger.warning(f"Demo preview page requested for unknown slug: '{clean_slug}'")
+        raise HTTPException(status_code=404, detail=f"Preview page for '{clean_slug}' not found.")
 
     # Parse rating from raw_data if available
     rating = None
