@@ -164,6 +164,8 @@ def get_outreach_tracker():
             "whatsapp_status": lead.whatsapp_status or "NOT_SENT",
             "approval_status": lead.approval_status or "PENDING",
             "demo_url": lead.demo_url or "",
+            "whatsapp_message": lead.whatsapp_message or "",
+            "email_message": lead.email_message or "",
             "last_contacted_at": lead.last_contacted_at or "",
             "error_log": lead.error_log or "",
             "status": lead.status or "",
@@ -209,6 +211,15 @@ def get_outreach_tracker():
             "total_not_sent": len(not_sent),
         }
     }
+
+
+@app.get("/api/lead/{lead_id}")
+def get_lead_details(lead_id: str):
+    """Returns single lead details as JSON."""
+    lead = db.get_lead_by_id(lead_id)
+    if not lead:
+        return JSONResponse(status_code=404, content={"status": "error", "message": "Lead not found"})
+    return {"status": "success", "lead": lead.to_dict()}
 
 
 @app.post("/api/lead/{lead_id}/mark-sent")
@@ -275,15 +286,10 @@ def approve_lead(lead_id: str):
             
             phone = format_whatsapp_phone(lead.phone)
             if phone:
-                demo_link = lead.demo_url or ""
-                if "trycloudflare.com" in demo_link or not demo_link or "localhost" in demo_link:
-                    from demo.server import generate_slug
-                    slug = generate_slug(lead.business_name, lead.city)
-                    target_base = config.DEMO_BASE_URL.rstrip("/")
-                    ext = ".html" if "github.io" in target_base else ""
-                    demo_link = f"{target_base}/{slug}{ext}"
-                    lead.demo_url = demo_link
-                    db.upsert_lead(lead)
+                from demo.url_generator import get_permanent_demo_url
+                demo_link = get_permanent_demo_url(lead.business_name, lead.city)
+                lead.demo_url = demo_link
+                db.upsert_lead(lead)
 
                 from ai.personalizer import generate_fallback_messages
                 fallback_copy = generate_fallback_messages(lead)
@@ -291,6 +297,7 @@ def approve_lead(lead_id: str):
                 text = text.replace("{{DEMO_URL}}", demo_link).replace("{DEMO_URL}", demo_link)
                 import re
                 text = re.sub(r'https?://[a-zA-Z0-9-]+\.trycloudflare\.com/preview[^\s]*', demo_link, text)
+                text = re.sub(r'https?://(?:localhost|127\.0\.0\.1):\d+/preview[^\s]*', demo_link, text)
                 wa_url = f"https://api.whatsapp.com/send?phone={phone}&text={urllib.parse.quote(text)}"
 
         return {"status": "success", "message": msg, "whatsapp_url": wa_url}
@@ -668,6 +675,32 @@ def unlink_whatsapp_web_session():
     """Unlinks local WhatsApp Web session."""
     from outreach.whatsapp_web_sender import unlink_whatsapp_web
     return unlink_whatsapp_web()
+
+
+@app.post("/api/lead/{lead_id}/send-whatsapp-automated")
+def send_lead_whatsapp_automated(lead_id: str):
+    """Dispatches WhatsApp message in background without opening manual web browser window."""
+    lead = db.get_lead_by_id(lead_id)
+    if not lead:
+        return JSONResponse(status_code=404, content={"status": "error", "message": "Lead not found"})
+    
+    if not lead.phone:
+        return JSONResponse(status_code=400, content={"status": "error", "message": "Lead has no phone number"})
+
+    from outreach.whatsapp_web_sender import send_whatsapp_message_automated, is_whatsapp_web_logged_in
+    if not is_whatsapp_web_logged_in():
+        return JSONResponse(status_code=400, content={"status": "error", "message": "WhatsApp Web session is not linked yet."})
+
+    res = send_whatsapp_message_automated(phone=lead.phone, message=lead.whatsapp_message, headless=True)
+    if res.get("status") == "SENT":
+        lead.whatsapp_status = "SENT"
+        lead.status = LeadStatus.SENT.value
+        lead.last_contacted_at = datetime.now(timezone.utc).isoformat()
+        db.upsert_lead(lead)
+        return {"status": "success", "message": f"Automated WhatsApp message delivered to '{lead.business_name}'!"}
+    else:
+        return JSONResponse(status_code=500, content={"status": "error", "message": res.get("error", "Failed to send message")})
+
 
 
 

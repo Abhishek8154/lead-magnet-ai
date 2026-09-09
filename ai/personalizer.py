@@ -269,20 +269,20 @@ def personalize_qualified_leads(
         full_email_message = f"Subject: {msg_data['email_subject']}\n\n{msg_data['email_body']}"
         full_wa_message = msg_data['whatsapp_message']
         
-        # If demo_url exists or can be constructed, replace placeholder immediately
-        target_demo_url = lead.demo_url
-        if not target_demo_url:
-            from demo.server import generate_slug
-            slug = generate_slug(lead.business_name, lead.city)
-            target_demo_url = f"{config.DEMO_BASE_URL}/{slug}"
+        # Always use permanent 24/7 HTTPS demo URL
+        from demo.url_generator import get_permanent_demo_url
+        target_demo_url = get_permanent_demo_url(lead.business_name, lead.city)
+        lead.demo_url = target_demo_url
 
-        if target_demo_url:
-            full_email_message = full_email_message.replace("{{DEMO_URL}}", f" {target_demo_url} ").replace("{DEMO_URL}", f" {target_demo_url} ")
-            if target_demo_url not in full_email_message:
-                full_email_message += f"\n\nHere is your custom website preview:\n👉 {target_demo_url}"
-            full_wa_message = full_wa_message.replace("{{DEMO_URL}}", f" {target_demo_url} ").replace("{DEMO_URL}", f" {target_demo_url} ")
-            if target_demo_url not in full_wa_message:
-                full_wa_message += f"\n👉 {target_demo_url}"
+        full_email_message = full_email_message.replace("{{DEMO_URL}}", target_demo_url).replace("{DEMO_URL}", target_demo_url)
+        full_email_message = re.sub(r'https?://[a-zA-Z0-9-]+\.trycloudflare\.com/preview[^\s]*', target_demo_url, full_email_message)
+        if target_demo_url not in full_email_message:
+            full_email_message += f"\n\nHere is your custom website preview:\n👉 {target_demo_url}"
+
+        full_wa_message = full_wa_message.replace("{{DEMO_URL}}", target_demo_url).replace("{DEMO_URL}", target_demo_url)
+        full_wa_message = re.sub(r'https?://[a-zA-Z0-9-]+\.trycloudflare\.com/preview[^\s]*', target_demo_url, full_wa_message)
+        if target_demo_url not in full_wa_message:
+            full_wa_message += f"\n👉 {target_demo_url}"
 
         lead.email_message = full_email_message
         lead.whatsapp_message = full_wa_message

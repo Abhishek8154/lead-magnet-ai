@@ -62,11 +62,16 @@ def send_approved_emails(
             logger.warning(f"Skipping email for '{lead.business_name}': {reason}")
             if "no valid email" in reason.lower():
                 lead.email_status = "NO_EMAIL"
-                lead.error_log = "Skipped: Lead has no email address."
                 db.upsert_lead(lead)
             continue
 
         now_iso = datetime.now(timezone.utc).isoformat()
+
+        # Resolve permanent demo URL and sanitize email body
+        import re
+        from demo.url_generator import get_permanent_demo_url
+        demo_link = get_permanent_demo_url(lead.business_name, lead.city)
+        lead.demo_url = demo_link
 
         # Parse Email Subject & Body from lead.email_message
         msg_raw = lead.email_message or ""
@@ -77,6 +82,12 @@ def send_approved_emails(
             parts = msg_raw.split("\n\n", 1)
             subject = parts[0].replace("Subject:", "").strip()
             body = parts[1] if len(parts) > 1 else ""
+
+        body = body.replace("{{DEMO_URL}}", demo_link).replace("{DEMO_URL}", demo_link)
+        body = re.sub(r'https?://[a-zA-Z0-9-]+\.trycloudflare\.com/preview[^\s]*', demo_link, body)
+        body = re.sub(r'https?://(?:localhost|127\.0\.0\.1):\d+/preview[^\s]*', demo_link, body)
+        if demo_link and demo_link not in body:
+            body += f"\n\n👉 {demo_link}"
 
         # --- DRY RUN MODE ---
         if config.DRY_RUN:

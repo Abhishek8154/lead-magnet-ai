@@ -48,8 +48,8 @@ def send_approved_whatsapp_messages(
 ) -> List[Dict[str, Any]]:
     """
     Sends WhatsApp outreach to APPROVED leads.
-    If config.DRY_RUN is True, prints preview and marks DRY_RUN_SENT without API calls.
-    If config.DRY_RUN is False, calls Meta WhatsApp Cloud API with retry on 429.
+    If config.DRY_RUN is True, marks DRY_RUN_SENT without sending real messages.
+    If config.DRY_RUN is False, uses Linked WhatsApp Web session or Meta Cloud API.
     """
     if db is None:
         db = Database()
@@ -74,25 +74,28 @@ def send_approved_whatsapp_messages(
             logger.warning(f"Skipping WhatsApp for '{lead.business_name}': {reason}")
             if "no valid phone" in reason.lower():
                 lead.whatsapp_status = "NO_PHONE"
-                lead.error_log = "Skipped: Lead has no valid phone number."
                 db.upsert_lead(lead)
             continue
 
         now_iso = datetime.now(timezone.utc).isoformat()
         phone_formatted = format_whatsapp_phone(lead.phone)
 
-        demo_link = lead.demo_url or ""
-        if "trycloudflare.com" in demo_link or not demo_link:
-            from demo.server import generate_slug
-            slug = generate_slug(lead.business_name, lead.city)
-            target_base = config.DEMO_BASE_URL.rstrip("/")
-            demo_link = f"{target_base}/{slug}"
-            lead.demo_url = demo_link
+        from demo.url_generator import get_permanent_demo_url
+        demo_link = get_permanent_demo_url(lead.business_name, lead.city)
+        lead.demo_url = demo_link
 
-        msg_body = lead.whatsapp_message or f"Hi {lead.business_name}, check your demo here: {demo_link}"
+        # If lead has no stored message, generate a proper one
+        if lead.whatsapp_message:
+            msg_body = lead.whatsapp_message
+        else:
+            from ai.personalizer import generate_fallback_messages
+            fallback = generate_fallback_messages(lead)
+            msg_body = fallback['whatsapp_message']
+
         msg_body = msg_body.replace("{{DEMO_URL}}", demo_link).replace("{DEMO_URL}", demo_link)
         import re
         msg_body = re.sub(r'https?://[a-zA-Z0-9-]+\.trycloudflare\.com/preview[^\s]*', demo_link, msg_body)
+        msg_body = re.sub(r'https?://(?:localhost|127\.0\.0\.1):\d+/preview[^\s]*', demo_link, msg_body)
         if demo_link and demo_link not in msg_body:
             msg_body += f"\n👉 {demo_link}"
 
@@ -119,74 +122,58 @@ def send_approved_whatsapp_messages(
             continue
 
         # --- REAL DISPATCH MODE (DRY_RUN = False) ---
-        phone_number_id = config.WHATSAPP_PHONE_NUMBER_ID or ""
-        token = config.WHATSAPP_TOKEN or ""
-
-        if not phone_number_id or not token or phone_number_id == "YOUR_PHONE_NUMBER_ID":
-            err_msg = "WHATSAPP_PHONE_NUMBER_ID or WHATSAPP_TOKEN is missing/default in .env"
-            logger.error(f"[WHATSAPP ERROR] {err_msg}")
-            lead.whatsapp_status = "FAILED"
-            lead.error_log = "Automated WhatsApp API requires valid WHATSAPP_TOKEN & WHATSAPP_PHONE_NUMBER_ID in .env"
-            db.upsert_lead(lead)
-            results.append({"lead_id": lead.lead_id, "business_name": lead.business_name, "error": err_msg})
-            continue
-
-        url = f"https://graph.facebook.com/v18.0/{phone_number_id}/messages"
-        headers = {
-            "Authorization": f"Bearer {token}",
-            "Content-Type": "application/json"
-        }
-        
-        # Primary payload: Text message
-        text_payload = {
-            "messaging_product": "whatsapp",
-            "to": phone_formatted,
-            "type": "text",
-            "text": {"body": msg_body}
-        }
+        from outreach.whatsapp_web_sender import is_whatsapp_web_logged_in, send_whatsapp_message_automated
 
         success = False
         err_msg = ""
+        is_session_issue = False
 
-        try:
-            logger.info(f"[AUTOMATED WA DISPATCH] Calling Meta Cloud API for '{lead.business_name}' (+{phone_formatted})...")
-            response = requests.post(url, headers=headers, json=text_payload, timeout=15)
+        # 1. Primary: Use Linked WhatsApp Web session
+        if is_whatsapp_web_logged_in():
+            logger.info(f"[AUTOMATED WA WEB DISPATCH] Using Linked WhatsApp Web Session for '{lead.business_name}' (+{phone_formatted})...")
+            try:
+                web_res = send_whatsapp_message_automated(phone=phone_formatted, message=msg_body)
+                if web_res.get("status") == "SENT":
+                    success = True
+                else:
+                    err_msg = web_res.get("error", "WhatsApp Web automated dispatch failed")
+                    if web_res.get("status") in ("SESSION_EXPIRED", "FAILED"):
+                        is_session_issue = True
+            except Exception as we:
+                err_msg = f"WhatsApp Web Exception: {we}"
+                is_session_issue = True
 
-            # Handle 429 Rate Limit - Wait 60s and retry ONCE
-            if response.status_code == 429:
-                logger.warning(f"[429 RATE LIMIT] Meta API rate limit hit for '{lead.business_name}'. Waiting 60s to retry...")
-                time.sleep(60.0)
-                response = requests.post(url, headers=headers, json=text_payload, timeout=15)
+        # 2. Secondary Fallback: Meta Cloud API (if configured and Web not linked)
+        elif not is_whatsapp_web_logged_in():
+            phone_number_id = config.WHATSAPP_PHONE_NUMBER_ID or ""
+            token = config.WHATSAPP_TOKEN or ""
 
-            if response.status_code in (200, 201):
-                success = True
+            if not phone_number_id or not token or phone_number_id == "YOUR_PHONE_NUMBER_ID":
+                err_msg = "WhatsApp Web not linked; ready for 1-Click WhatsApp dispatch."
+                is_session_issue = True
+                logger.info(f"[1-CLICK WA READY] {err_msg} for '{lead.business_name}'")
             else:
-                resp_text = response.text
-                # Fallback: Try Meta Template Payload if freeform text is restricted
-                if "131047" in resp_text or "template" in resp_text.lower():
-                    logger.info(f"Retrying Meta WhatsApp API with Template payload for '+{phone_formatted}'...")
-                    template_payload = {
-                        "messaging_product": "whatsapp",
-                        "to": phone_formatted,
-                        "type": "template",
-                        "template": {
-                            "name": os.getenv("WHATSAPP_TEMPLATE_NAME", "hello_world"),
-                            "language": {"code": "en_US"}
-                        }
-                    }
-                    tmpl_res = requests.post(url, headers=headers, json=template_payload, timeout=15)
-                    if tmpl_res.status_code in (200, 201):
+                url = f"https://graph.facebook.com/v18.0/{phone_number_id}/messages"
+                headers = {
+                    "Authorization": f"Bearer {token}",
+                    "Content-Type": "application/json"
+                }
+                text_payload = {
+                    "messaging_product": "whatsapp",
+                    "to": phone_formatted,
+                    "type": "text",
+                    "text": {"body": msg_body}
+                }
+                try:
+                    logger.info(f"[AUTOMATED WA DISPATCH] Calling Meta Cloud API for '{lead.business_name}' (+{phone_formatted})...")
+                    response = requests.post(url, headers=headers, json=text_payload, timeout=15)
+                    if response.status_code in (200, 201):
                         success = True
                     else:
-                        err_msg = f"Meta API HTTP {tmpl_res.status_code}: {tmpl_res.text}"
-                else:
-                    if "GraphMethodException" in resp_text or "does not exist" in resp_text or "permissions" in resp_text:
-                        err_msg = "Meta API Access Token or Phone Number ID expired/invalid in .env. Update credentials in developers.facebook.com."
-                    else:
+                        resp_text = response.text
                         err_msg = f"Meta API HTTP {response.status_code}: {resp_text[:150]}"
-
-        except Exception as e:
-            err_msg = f"Network/API Exception: {e}"
+                except Exception as e:
+                    err_msg = f"Meta API Exception: {e}"
 
         if success:
             lead.whatsapp_status = "SENT"
@@ -208,9 +195,10 @@ def send_approved_whatsapp_messages(
                 "mode": "LIVE_AUTOMATED"
             })
         else:
-            logger.error(f"[WHATSAPP DISPATCH FAILED] '{lead.business_name}': {err_msg}")
-            lead.whatsapp_status = "FAILED"
-            lead.error_log = err_msg
+            # Fallback to 1-Click WhatsApp Direct Ready
+            logger.warning(f"[WHATSAPP 1-CLICK READY] '{lead.business_name}' (+{phone_formatted}): {err_msg}")
+            lead.whatsapp_status = "WA_DIRECT_READY"
+            lead.error_log = None
             db.upsert_lead(lead)
             sheets_logger.sync_lead(lead)
 
@@ -218,27 +206,24 @@ def send_approved_whatsapp_messages(
                 "lead_id": lead.lead_id,
                 "business_name": lead.business_name,
                 "phone": phone_formatted,
-                "whatsapp_status": lead.whatsapp_status,
-                "error": err_msg,
-                "mode": "LIVE_AUTOMATED"
+                "whatsapp_status": "WA_DIRECT_READY",
+                "message": "Ready for 1-Click WhatsApp Dispatch",
+                "mode": "1_CLICK_DIRECT"
             })
 
-            # ── AUTO EMAIL FALLBACK ──────────────────────────────────────────
-            # If WhatsApp failed due to Meta test mode restriction (131030),
-            # and this lead has an email, automatically send email instead.
-            is_test_mode_block = any(code in err_msg for code in META_TEST_MODE_ERRORS)
+            # ── AUTO EMAIL FALLBACK IF AVAILABLE ──────────────────────────
             has_email = lead.email and str(lead.email).strip()
             email_not_yet_sent = lead.email_status not in ("SENT", "DRY_RUN_SENT")
 
-            if is_test_mode_block and has_email and email_not_yet_sent:
-                logger.info(f"[EMAIL FALLBACK] WhatsApp blocked by Meta test mode → Trying email for '{lead.business_name}'...")
+            if has_email and email_not_yet_sent:
+                logger.info(f"[EMAIL FALLBACK] Automated WhatsApp unavailable → Sending email for '{lead.business_name}'...")
                 try:
                     from outreach.email_sender import send_approved_emails
                     fallback_results = send_approved_emails(leads=[lead], db=db)
                     if fallback_results and fallback_results[0].get("email_status") == "SENT":
                         logger.info(f"[EMAIL FALLBACK SUCCESS] Email sent to '{lead.business_name}' ({lead.email}).")
                     else:
-                        logger.warning(f"[EMAIL FALLBACK] Email also failed for '{lead.business_name}'.")
+                        logger.warning(f"[EMAIL FALLBACK] Email could not be delivered for '{lead.business_name}'.")
                 except Exception as fe:
                     logger.error(f"[EMAIL FALLBACK ERROR] Could not send email for '{lead.business_name}': {fe}")
             # ────────────────────────────────────────────────────────────────

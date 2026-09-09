@@ -133,11 +133,10 @@ def run_tunnel(port: int = 8001):
 
     if public_url:
         print("\n" + "=" * 65)
-        print(f"🎉 PUBLIC LIVE HTTPS DEMO BASE URL READY:")
+        print(f"🎉 LOCAL DEVELOPMENT TUNNEL ACTIVE (Temporary):")
         print(f"👉 {public_url}")
+        print("ℹ️ Note: Outreach links use permanent 24/7 GitHub Pages URLs.")
         print("=" * 65 + "\n")
-        update_env_demo_url(public_url)
-        update_database_leads(public_url)
     else:
         logger.error("Timed out waiting for Cloudflare public URL.")
 

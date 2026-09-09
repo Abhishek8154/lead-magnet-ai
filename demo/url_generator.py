@@ -11,25 +11,33 @@ from utils.logger import get_logger
 logger = get_logger("URLGenerator")
 
 
+def get_permanent_demo_url(business_name: str, city: Optional[str] = "", base_url: Optional[str] = None) -> str:
+    """Returns permanent 24/7 HTTPS demo URL for a business on GitHub Pages."""
+    slug = generate_slug(business_name, city)
+    target_base = (base_url or config.DEMO_BASE_URL or "").rstrip("/")
+    if not target_base or "trycloudflare.com" in target_base or "localhost" in target_base or "127.0.0.1" in target_base:
+        target_base = "https://abhishek8154.github.io/lead-magnet-ai/preview"
+    ext = ".html" if "github.io" in target_base.lower() else ""
+    return f"{target_base}/{slug}{ext}"
+
+
 def process_demo_urls(
     leads: Optional[List[Lead]] = None,
     db: Optional[Database] = None,
     base_url: Optional[str] = None
 ) -> List[Dict[str, Any]]:
     """
-    Generates personalized demo preview URLs for leads with status PERSONALIZED:
-    - URL format: {DEMO_BASE_URL}/{slug}
-    - Fallback: {DEMO_BASE_URL}?lead_id={lead_id}
+    Generates personalized permanent demo preview URLs for leads:
+    - URL format: {DEMO_BASE_URL}/{slug}.html (24/7 permanent GitHub Pages)
     - Verifies page loading and business_name rendering via HTTP GET
     - Sets demo_status to READY / FAILED
     - Updates demo_url in DB and replaces {{DEMO_URL}} in outreach messages
+    - Automatically exports static demo pages and syncs to GitHub Pages
     - Updates status to DEMO_READY
     """
     if db is None:
         db = Database()
         db.init_db()
-
-    target_base = (base_url or config.DEMO_BASE_URL).rstrip("/")
 
     if leads is None:
         all_leads = db.get_all_leads()
@@ -44,15 +52,13 @@ def process_demo_urls(
 
     # Initialize FastAPI TestClient for in-process HTTP verification
     test_client = TestClient(app)
-    is_gh_pages = "github.io" in target_base.lower()
 
     for idx, lead in enumerate(leads, 1):
         slug = generate_slug(lead.business_name, lead.city)
-        ext = ".html" if is_gh_pages else ""
-        demo_url = f"{target_base}/{slug}{ext}"
-        fallback_url = f"{target_base}?lead_id={lead.lead_id}"
+        demo_url = get_permanent_demo_url(lead.business_name, lead.city, base_url=base_url)
+        fallback_url = demo_url
 
-        logger.info(f"[{idx}/{len(leads)}] Generated slug '{slug}' for '{lead.business_name}'. URL: {demo_url}")
+        logger.info(f"[{idx}/{len(leads)}] Generated permanent demo URL for '{lead.business_name}': {demo_url}")
 
         # Verification via HTTP GET request
         verified = False
