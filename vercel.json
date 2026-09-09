@@ -1,18 +1,5 @@
 {
-  "version": 2,
-  "public": true,
+  "outputDirectory": "docs",
   "cleanUrls": true,
-  "trailingSlash": false,
-  "builds": [
-    {
-      "src": "docs/**",
-      "use": "@vercel/static"
-    }
-  ],
-  "routes": [
-    {
-      "src": "/(.*)",
-      "dest": "/docs/$1"
-    }
-  ]
+  "trailingSlash": false
 }
