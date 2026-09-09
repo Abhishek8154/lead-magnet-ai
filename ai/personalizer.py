@@ -1,5 +1,7 @@
+import re
 import json
 import time
+import unicodedata
 import anthropic
 from typing import List, Dict, Any, Optional
 from config import config
@@ -10,11 +12,11 @@ from utils.logger import get_logger
 logger = get_logger("AIPersonalizer")
 
 SYSTEM_PROMPT = (
-    "You are an elite, highly persuasive digital marketing & web design consultant in India. "
-    "Generate ultra-attractive, engaging, high-converting cold emails and WhatsApp messages for business owners. "
-    "Make messages feel like warm, genuine 1-on-1 personal compliments. Include subtle emojis. "
+    "You are an executive digital strategy & healthcare web design consultant in India. "
+    "Generate highly professional, articulate, respectful B2B cold emails and WhatsApp messages for healthcare clinics and doctors. "
+    "Tone: Professional, courteous, value-oriented, and credible. Never use casual slang, excessive exclamation points, or spammy claims. "
     "STRICTLY FORBIDDEN: Never use spam/hype/discount/offer/surprise/deal words (e.g. surprise, offer, discount, free, special, deal, sale, bonus). "
-    "Ensure every message includes the {{DEMO_URL}} placeholder with clear call-to-action arrows."
+    "Ensure every message includes the {{DEMO_URL}} placeholder with clear call-to-action formatting."
 )
 
 
@@ -45,105 +47,112 @@ def extract_meta(lead: Lead) -> Dict[str, Any]:
     }
 
 
+def clean_business_name(raw_name: str) -> str:
+    """
+    Cleans Google Maps SEO keywords and clutter from business names.
+    e.g. 'Dr. Rimmi Shekhawat's Marudhar Dental Centre - Dentist in Jaipur' -> 'Dr. Rimmi Shekhawat's Dental Centre'
+    'Bangalore Dental Specialists Dental Clinic, Dentist HSR Layout' -> 'Bangalore Dental Specialists'
+    """
+    if not raw_name:
+        return ""
+    import unicodedata
+    name = unicodedata.normalize('NFKD', raw_name)
+    name = re.sub(r'[^\x00-\x7F]+', ' ', name)
+
+    # Split by hyphen or pipe or comma to remove location/SEO suffixes
+    parts = re.split(r'[-–—|,:]', name)
+    main = parts[0].strip()
+
+    # Clean redundant clinic/dentist descriptors
+    main = re.sub(r'(?i)\b(best|top|expert|specialist|hospital|centre|center|ltd|pvt)\b', '', main)
+    main = re.sub(r'\s+', ' ', main).strip()
+
+    # Strip city name at end if preceded by space
+    main = re.sub(r'(?i)\s+(Vadodara|Jaipur|Rajkot|Bangalore|Benglore|Bengaluru|Ahmedabad|Surat|Mumbai|Delhi|Austin|Hyderabad|Chennai|Pune)$', '', main).strip()
+
+    main = re.sub(r'\s+', ' ', main).strip()
+    if len(main) < 3:
+        main = parts[0].strip()
+    return main or raw_name.strip()
+
+
 def generate_fallback_messages(lead: Lead) -> Dict[str, str]:
-    """Generates attractive, high-converting personalized outreach messages tailored by website status."""
+    """Generates professional, articulate, executive-level outreach messages for healthcare practices."""
     meta = extract_meta(lead)
     ws = (lead.website_status or "").upper()
-    b_name = lead.business_name
+    raw_b_name = lead.business_name
+    b_name = clean_business_name(raw_b_name)
     city = lead.city or "your area"
-    sender = config.SENDER_NAME or "Lead Magnet AI"
+    sender = config.SENDER_NAME or "Abhishek"
 
-    rating_str = f" ⭐ ({meta['rating']} stars across {meta['review_count']} reviews)" if meta['rating'] else ""
-
-    if ws == "NO_WEBSITE":
-        subject = f"Personalized website concept for {b_name} 🚀"
+    if ws in ("NO_WEBSITE", "DOMAIN_ONLY", "SOCIAL_MEDIA_ONLY") or not lead.website_url:
+        subject = f"Digital Patient Portal Concept for {b_name}"
         email_body_text = (
-            f"Hi {b_name} Team,\n\n"
-            f"I was searching for top-rated local businesses in {city} and was really impressed by {b_name}{rating_str}!\n\n"
-            f"I noticed you don't currently have an official website to convert Google search traffic into direct customers. "
-            f"To show you how much of a difference a modern web presence makes, I custom-designed an interactive website preview specifically for {b_name}:\n\n"
-            f"👉 View Your Custom Demo Here: {{DEMO_URL}}\n\n"
-            f"What's included in your preview:\n"
-            f"• Premium Mobile-Optimized Interface\n"
-            f"• Instant Direct Call & WhatsApp Booking Buttons\n"
-            f"• High-Converting Service Showcase\n\n"
-            f"Would you be open to a quick 2-minute chat this week to take a look?\n\n"
-            f"Warm regards,\n{sender}\nLead Magnet AI Team"
+            f"Dear Dr. / {b_name} Team,\n\n"
+            f"I hope this message finds you well.\n\n"
+            f"While researching prominent dental practices in {city}, I noted that {b_name} does not currently have a dedicated website or online patient scheduling portal.\n\n"
+            f"To illustrate how a modern digital presence can showcase your clinic's clinical expertise, patient video walkthroughs, and direct appointment bookings, I prepared a customized, interactive website preview for your practice:\n\n"
+            f"👉 {{DEMO_URL}}\n\n"
+            f"I would welcome your feedback on this concept. Would you or your practice manager be open to a brief 5-minute conversation this week to discuss how this could support your patient acquisition?\n\n"
+            f"Sincerely,\n"
+            f"{sender}\n"
+            f"Healthcare Digital Strategy Consultant"
         )
         wa_text = (
-            f"Hey {b_name} Team! 👋\n\n"
-            f"I was searching for top local businesses in {city} and was really impressed by {b_name}! ⭐\n\n"
-            f"I noticed you don't have an official website yet, so I went ahead and built a custom interactive website preview specifically for your business:\n\n"
+            f"Dear {b_name} Team,\n\n"
+            f"I hope you're having a productive week.\n\n"
+            f"I noticed {b_name}'s strong reputation in {city} and put together a modern, interactive website concept to help showcase your clinical work and treatments to prospective patients:\n\n"
             f"👉 {{DEMO_URL}}\n\n"
-            f"It's mobile-optimized and designed to capture direct client inquiries. Would love to get your thoughts when you have 2 minutes! 😊"
+            f"Whenever you have a quick moment, take a look and let me know if this is something you'd like to explore for your practice.\n\n"
+            f"Best regards,\n"
+            f"{sender}"
         )
 
     elif ws == "BROKEN_WEBSITE":
-        subject = f"Quick update on {b_name}'s website + fresh demo 🌐"
+        subject = f"Website Accessibility & Digital Concept for {b_name}"
         email_body_text = (
-            f"Hi {b_name} Team,\n\n"
-            f"I tried visiting your website while researching top-rated services in {city} and noticed your existing site appears to be unreachable or experiencing issues.\n\n"
-            f"To help get your online presence back up and running smoothly, I put together a brand new interactive website concept tailored for {b_name}:\n\n"
-            f"👉 View Your Fresh Preview Here: {{DEMO_URL}}\n\n"
-            f"What's upgraded in your demo:\n"
-            f"• Lightning-Fast Load Speeds & Secure Setup\n"
-            f"• Modern Layout showcasing {b_name}'s key strengths\n"
-            f"• Direct WhatsApp & Phone Inquiry Buttons\n\n"
-            f"Would you have 2 minutes to take a quick look?\n\n"
-            f"Warm regards,\n{sender}\nLead Magnet AI Team"
+            f"Dear Dr. / {b_name} Team,\n\n"
+            f"I hope this message finds you well.\n\n"
+            f"While researching leading healthcare providers in {city}, I noticed that your clinic's current website appears temporarily inaccessible, which can prevent prospective patients from booking consultations.\n\n"
+            f"I took the initiative to build a modern, interactive web concept tailored specifically for {b_name}—complete with video clinic tours, before-and-after smile transformation galleries, and streamlined appointment scheduling:\n\n"
+            f"👉 {{DEMO_URL}}\n\n"
+            f"Please feel free to review the preview at your convenience. Would you be open to a brief conversation regarding restoring and upgrading your clinic's online presence?\n\n"
+            f"Sincerely,\n"
+            f"{sender}\n"
+            f"Healthcare Digital Strategy Consultant"
         )
         wa_text = (
-            f"Hey {b_name} Team! 👋\n\n"
-            f"I tried visiting your website while searching for top businesses in {city} and noticed it might be experiencing downtime.\n\n"
-            f"To help get your business back online fast, I built a fresh, modern interactive website preview for {b_name}:\n\n"
+            f"Dear {b_name} Team,\n\n"
+            f"I hope you're having a productive week.\n\n"
+            f"I noticed {b_name}'s strong reputation in {city} and put together a modern, interactive website concept to help showcase your clinical work and treatments to prospective patients:\n\n"
             f"👉 {{DEMO_URL}}\n\n"
-            f"Take a quick look and let me know what you think! 😊"
-        )
-
-    elif ws == "SOCIAL_ONLY":
-        subject = f"Elevating {b_name}'s online presence — custom demo inside ✨"
-        email_body_text = (
-            f"Hi {b_name} Team,\n\n"
-            f"Loved seeing your active presence on social media! {b_name} clearly has a strong reputation in {city}{rating_str}.\n\n"
-            f"A dedicated, high-converting website paired with your social media can help turn social profile visitors into direct, high-value paying customers. "
-            f"I put together a custom interactive website demo designed for {b_name}:\n\n"
-            f"👉 View Your Custom Demo Here: {{DEMO_URL}}\n\n"
-            f"Key benefits built in:\n"
-            f"• Seamless Integration with Your Social Media\n"
-            f"• Direct Appointment & Booking Call-to-Actions\n"
-            f"• Clean, Mobile-First Design\n\n"
-            f"Could we connect for a quick 2-minute chat this week?\n\n"
-            f"Warm regards,\n{sender}\nLead Magnet AI Team"
-        )
-        wa_text = (
-            f"Hey {b_name} Team! 👋\n\n"
-            f"Loved seeing {b_name}'s presence on social media! ⭐ A dedicated website will help convert your profile visitors into direct bookings.\n\n"
-            f"I created a custom interactive website preview for {b_name}:\n\n"
-            f"👉 {{DEMO_URL}}\n\n"
-            f"Would love to hear your feedback on the design when you take a look! 😊"
+            f"Whenever you have a quick moment, take a look and let me know if this is something you'd like to explore for your practice.\n\n"
+            f"Best regards,\n"
+            f"{sender}"
         )
 
     else:  # VALID_WEBSITE or Default
-        subject = f"Quick website design concept for {b_name} 💡"
+        subject = f"Interactive Patient Experience Concept for {b_name}"
         email_body_text = (
-            f"Hi {b_name} Team,\n\n"
-            f"I came across {b_name} in {city} and was really impressed by your rating and reviews{rating_str}.\n\n"
-            f"Upgrading your web experience with a modern, high-converting design can help double the leads you convert from online searches. "
-            f"I custom-designed a fresh interactive website concept specifically for {b_name}:\n\n"
-            f"👉 View Your Custom Demo Here: {{DEMO_URL}}\n\n"
-            f"Key upgrades featured in your concept:\n"
-            f"• Ultra-Fast Mobile Optimization\n"
-            f"• One-Tap Direct WhatsApp & Call Booking\n"
-            f"• Modern & Premium Visual Aesthetics\n\n"
-            f"Would you be open to a 2-minute feedback chat this week?\n\n"
-            f"Warm regards,\n{sender}\nLead Magnet AI Team"
+            f"Dear Dr. / {b_name} Team,\n\n"
+            f"I hope this message finds you well.\n\n"
+            f"While reviewing top-tier dental practices in {city}, I was impressed by the clinical reputation of {b_name}.\n\n"
+            f"To explore ways to further elevate your patient engagement and increase direct appointment inquiries, I designed an interactive, mobile-optimized digital experience tailored to your practice:\n\n"
+            f"👉 {{DEMO_URL}}\n\n"
+            f"The concept includes interactive 3D video walkthroughs, smile transformation case studies, and instant consultation booking.\n\n"
+            f"If you have a brief moment, I would welcome your thoughts. Would you be open to a brief discussion this week?\n\n"
+            f"Sincerely,\n"
+            f"{sender}\n"
+            f"Healthcare Digital Strategy Consultant"
         )
         wa_text = (
-            f"Hey {b_name} Team! 👋\n\n"
-            f"I came across {b_name} in {city} and was really impressed by your reviews and reputation! ⭐\n\n"
-            f"I custom-designed a high-converting interactive website preview to show how you can boost your direct client inquiries:\n\n"
+            f"Dear {b_name} Team,\n\n"
+            f"I hope you're having a productive week.\n\n"
+            f"I noticed {b_name}'s strong reputation in {city} and put together a modern, interactive website concept to help showcase your clinical work and treatments to prospective patients:\n\n"
             f"👉 {{DEMO_URL}}\n\n"
-            f"Check it out and let me know your thoughts when you take a look! 😊"
+            f"Whenever you have a quick moment, take a look and let me know if this is something you'd like to explore for your practice.\n\n"
+            f"Best regards,\n"
+            f"{sender}"
         )
 
     return {
@@ -166,7 +175,7 @@ def call_anthropic_api(lead: Lead) -> Dict[str, str]:
     meta = extract_meta(lead)
 
     user_prompt = f"""
-Generate ultra-personalized cold outreach messages for:
+Generate an executive, professional, respectful B2B outreach message for a healthcare practice:
 
 - Business Name: {lead.business_name}
 - City: {lead.city or 'N/A'}
@@ -174,16 +183,12 @@ Generate ultra-personalized cold outreach messages for:
 - Website Status: {lead.website_status or 'N/A'}
 - Rating: {meta['rating'] or 'N/A'}
 
-STRICT SUBJECT LINE RULES:
-1. Subject line MUST BE EXACTLY 3 to 5 words long (e.g. "Quick question re: {lead.business_name}" or "Website concept for {lead.business_name}").
-2. MUST feel like a genuine 1-on-1 personal email that makes the receiver curious and eager to open.
-3. ABSOLUTELY NO SPAM OR HYPE WORDS: Never use words like "surprise", "offer", "discount", "free", "special", "deal", "bonus", "limited".
-
-Email Body Rules:
-- Max 80 words. Polite, concise, human. Include {{DEMO_URL}} placeholder.
-
-WhatsApp Rules:
-- Max 50 words. Direct & casual. Include {{DEMO_URL}} placeholder.
+Tone & Formatting Rules:
+1. Tone MUST be courteous, professional, and credible for doctors and practice directors.
+2. Subject line: 4-6 words, formal (e.g. "Digital Patient Experience Concept for {lead.business_name}").
+3. ABSOLUTELY NO spam, hype, or discount words (e.g., offer, discount, free, surprise, deal, bonus).
+4. Email Body: Professional greeting ("Dear Dr. / Team"), polite value proposition, clear {{DEMO_URL}} call to action, professional closing and sign-off.
+5. WhatsApp: Professional, concise, respectful greeting, clear {{DEMO_URL}}, polite call to action.
 
 Return ONLY a valid JSON object with keys: "email_subject", "email_body", "whatsapp_message".
 """
