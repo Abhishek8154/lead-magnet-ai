@@ -295,3 +295,32 @@ class Database:
             return leads
         finally:
             conn.close()
+
+    def delete_lead(self, lead_id: str) -> bool:
+        """Deletes a single lead and its associated approval record from the database."""
+        conn = self.get_connection()
+        try:
+            cursor = conn.cursor()
+            self._execute(cursor, "DELETE FROM leads WHERE lead_id = ?;", (lead_id,))
+            self._execute(cursor, "DELETE FROM approvals WHERE lead_id = ?;", (lead_id,))
+            conn.commit()
+            logger.info(f"Deleted lead ID: {lead_id}")
+            return True
+        finally:
+            conn.close()
+
+    def delete_leads_by_ids(self, lead_ids: List[str]) -> int:
+        """Deletes multiple leads by list of IDs."""
+        if not lead_ids:
+            return 0
+        conn = self.get_connection()
+        try:
+            cursor = conn.cursor()
+            for lid in lead_ids:
+                self._execute(cursor, "DELETE FROM leads WHERE lead_id = ?;", (lid,))
+                self._execute(cursor, "DELETE FROM approvals WHERE lead_id = ?;", (lid,))
+            conn.commit()
+            logger.info(f"Deleted {len(lead_ids)} leads from database.")
+            return len(lead_ids)
+        finally:
+            conn.close()

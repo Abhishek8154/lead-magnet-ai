@@ -1,7 +1,7 @@
 import sys
 import json
 import shutil
-from typing import Optional
+from typing import Optional, List
 from pathlib import Path
 
 # Add project root directory to sys.path
@@ -11,6 +11,7 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from jinja2 import Environment, FileSystemLoader
 from database import Database
+from models import Lead
 from demo.server import generate_slug
 from config import config
 from utils.logger import get_logger

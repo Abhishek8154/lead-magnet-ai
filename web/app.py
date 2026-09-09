@@ -10,6 +10,7 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from typing import Optional
+from datetime import datetime, timezone
 import uvicorn
 from fastapi import FastAPI, Request, BackgroundTasks
 from fastapi.responses import HTMLResponse, JSONResponse
@@ -177,7 +178,7 @@ def get_outreach_tracker():
             email_dry_run.append(lead_info)
 
         # Classify WhatsApp delivery
-        if lead.whatsapp_status in ("SENT", "WA_DIRECT_READY"):
+        if lead.whatsapp_status in ("SENT", "DELIVERED", "READ", "REPLIED", "WA_DIRECT_READY"):
             whatsapp_delivered.append(lead_info)
         elif lead.whatsapp_status == "FAILED":
             whatsapp_failed.append(lead_info)
@@ -210,6 +211,52 @@ def get_outreach_tracker():
     }
 
 
+@app.post("/api/lead/{lead_id}/mark-sent")
+def mark_lead_sent(lead_id: str, channel: str = "whatsapp"):
+    """Marks a lead as SENT via 1-Click WhatsApp or Email and syncs to Google Sheets."""
+    lead = db.get_lead_by_id(lead_id)
+    if not lead:
+        return JSONResponse(status_code=404, content={"status": "error", "message": "Lead not found"})
+    
+    now_iso = datetime.now(timezone.utc).isoformat()
+    if channel.lower() == "whatsapp":
+        lead.whatsapp_status = "SENT"
+    else:
+        lead.email_status = "SENT"
+    
+    lead.status = LeadStatus.SENT.value
+    lead.last_contacted_at = now_iso
+    lead.error_log = None
+    db.upsert_lead(lead)
+
+    # Sync to Google Sheets
+    try:
+        from sheets_logging.sheets_logger import GoogleSheetsLogger
+        sheets = GoogleSheetsLogger()
+        sheets.sync_lead(lead)
+    except Exception as se:
+        print(f"Sheets sync warning on mark-sent: {se}")
+
+    return {
+        "status": "success",
+        "message": f"Lead '{lead.business_name}' marked as SENT via {channel.upper()}.",
+        "lead": lead.to_dict()
+    }
+
+
+@app.api_route("/api/lead/{lead_id}/delete", methods=["GET", "POST", "DELETE"])
+@app.delete("/api/lead/{lead_id}")
+def delete_lead_endpoint(lead_id: str):
+    """Deletes a lead from SQLite database."""
+    lead = db.get_lead_by_id(lead_id)
+    if not lead:
+        return JSONResponse(status_code=404, content={"status": "error", "message": "Lead not found"})
+    
+    b_name = lead.business_name
+    db.delete_lead(lead_id)
+    return {"status": "success", "message": f"Lead '{b_name}' removed from database."}
+
+
 @app.post("/api/approve/{lead_id}")
 def approve_lead(lead_id: str):
     """Approves a lead for outreach and automatically dispatches Email + WhatsApp messages."""
@@ -229,22 +276,21 @@ def approve_lead(lead_id: str):
             phone = format_whatsapp_phone(lead.phone)
             if phone:
                 demo_link = lead.demo_url or ""
-                if "trycloudflare.com" in demo_link or not demo_link:
+                if "trycloudflare.com" in demo_link or not demo_link or "localhost" in demo_link:
                     from demo.server import generate_slug
                     slug = generate_slug(lead.business_name, lead.city)
                     target_base = config.DEMO_BASE_URL.rstrip("/")
-                    demo_link = f"{target_base}/{slug}"
+                    ext = ".html" if "github.io" in target_base else ""
+                    demo_link = f"{target_base}/{slug}{ext}"
                     lead.demo_url = demo_link
                     db.upsert_lead(lead)
 
-                text = lead.whatsapp_message or f"Hi {lead.business_name}, check your personalized website demo here: {demo_link}"
-                # Replace placeholders
+                from ai.personalizer import generate_fallback_messages
+                fallback_copy = generate_fallback_messages(lead)
+                text = lead.whatsapp_message or fallback_copy["whatsapp_message"]
                 text = text.replace("{{DEMO_URL}}", demo_link).replace("{DEMO_URL}", demo_link)
-                # Replace legacy trycloudflare links if any remain
                 import re
                 text = re.sub(r'https?://[a-zA-Z0-9-]+\.trycloudflare\.com/preview[^\s]*', demo_link, text)
-                if demo_link and demo_link not in text:
-                    text += f"\n👉 {demo_link}"
                 wa_url = f"https://api.whatsapp.com/send?phone={phone}&text={urllib.parse.quote(text)}"
 
         return {"status": "success", "message": msg, "whatsapp_url": wa_url}
@@ -385,13 +431,25 @@ async def receive_whatsapp_reply(request: Request):
         return {"status": "error", "message": str(e)}
 
 
-@app.post("/api/reject/{lead_id}")
-def reject_lead(lead_id: str):
-    """Rejects a lead."""
-    success, msg = process_lead_decision(lead_id=lead_id, action="R", db=db)
-    if success:
-        return {"status": "success", "message": msg}
-    return JSONResponse(status_code=400, content={"status": "error", "message": msg})
+@app.post("/api/lead/{lead_id}/replied")
+def mark_lead_replied(lead_id: str):
+    """Marks a lead as REPLIED, updates Google Sheets, and halts future follow-ups."""
+    lead = db.get_lead_by_id(lead_id)
+    if not lead:
+        return JSONResponse(status_code=404, content={"status": "error", "message": "Lead not found"})
+    
+    lead.status = LeadStatus.REPLIED.value
+    lead.whatsapp_status = "REPLIED"
+    lead.notes = "Client Replied"
+    db.upsert_lead(lead)
+    
+    # Sync to Google Sheets
+    from sheets_logging.sheets_logger import GoogleSheetsLogger
+    sheets = GoogleSheetsLogger()
+    sheets.sync_lead(lead)
+    
+    return {"status": "success", "message": f"Lead '{lead.business_name}' marked as REPLIED. Follow-ups stopped and Google Sheets synced."}
+
 
 
 
@@ -575,28 +633,72 @@ def list_followups():
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# BACKGROUND AUTO FOLLOW-UP SCHEDULER
+# WHATSAPP WEB SESSION MANAGEMENT (One-Time QR Scan & Automated Dispatch)
+# ─────────────────────────────────────────────────────────────────────────────
+
+@app.get("/api/whatsapp/status")
+def get_whatsapp_web_status():
+    """Checks whether local WhatsApp Web session is logged in and ready for automated sending."""
+    from outreach.whatsapp_web_sender import is_whatsapp_web_logged_in
+    is_linked = is_whatsapp_web_logged_in()
+    return {
+        "status": "success",
+        "is_linked": is_linked,
+        "mode": "AUTOMATED_BACKGROUND" if is_linked else "1_CLICK_MANUAL"
+    }
+
+
+@app.get("/api/whatsapp/qr-status")
+def get_whatsapp_qr_status():
+    """Returns current live QR code stream and authentication state for dashboard modal."""
+    from outreach.whatsapp_web_sender import get_current_qr_state
+    return get_current_qr_state()
+
+
+@app.post("/api/whatsapp/link")
+def link_whatsapp_web_session():
+    """Starts live background QR code capture session."""
+    from outreach.whatsapp_web_sender import login_whatsapp_web
+    res = login_whatsapp_web(timeout_seconds=90)
+    return res
+
+
+@app.post("/api/whatsapp/unlink")
+def unlink_whatsapp_web_session():
+    """Unlinks local WhatsApp Web session."""
+    from outreach.whatsapp_web_sender import unlink_whatsapp_web
+    return unlink_whatsapp_web()
+
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# BACKGROUND AUTO FOLLOW-UP SCHEDULER (Day 3, 5, 7, 10)
 # Runs every 4 hours. In LIVE mode, auto-dispatches due follow-ups.
-# In DRY RUN mode, generates previews only.
 # ─────────────────────────────────────────────────────────────────────────────
 
 @app.get("/api/cron/followups")
 def vercel_cron_trigger_followups(request: Request):
-    """Vercel Cron endpoint to trigger followups every 4 hours without background thread."""
-    # Vercel sends a specific authorization header for crons
-    # You can secure this further if you like, for now it allows the cron to hit it.
+    """Cron endpoint to evaluate and dispatch follow-ups (Day 3, 5, 7, 10)."""
     engine = FollowupEngine(db=db)
     results = engine.evaluate_and_process_followups(force=False)
     
     if results and not config.DRY_RUN:
         from outreach.email_sender import send_approved_emails
         from outreach.whatsapp_sender import send_approved_whatsapp_messages
+        from outreach.whatsapp_web_sender import send_whatsapp_message_automated, is_whatsapp_web_logged_in
+        
         dispatched = 0
         for item in results:
             lead = db.get_lead_by_id(item["lead_id"])
             if lead:
+                # 1. Send Email Follow-up
                 send_approved_emails(leads=[lead], db=db)
-                send_approved_whatsapp_messages(leads=[lead], db=db)
+                
+                # 2. Send WhatsApp Follow-up (Automated Web if linked, otherwise Meta API)
+                if is_whatsapp_web_logged_in() and lead.phone:
+                    send_whatsapp_message_automated(phone=lead.phone, message=lead.whatsapp_message)
+                else:
+                    send_approved_whatsapp_messages(leads=[lead], db=db)
                 dispatched += 1
         return {"status": "success", "message": f"Cron: Dispatched {dispatched} follow-ups."}
     
@@ -605,34 +707,44 @@ def vercel_cron_trigger_followups(request: Request):
 
 
 def _auto_followup_scheduler():
-    """Background thread: checks every 4 hours and auto-sends due follow-ups."""
+    """Background thread: checks every 4 hours and auto-sends due follow-ups on Day 3, 5, 7, 10."""
     import logging
     scheduler_logger = logging.getLogger("AutoFollowupScheduler")
-    # Wait 30 seconds after server boot before first check
-    time.sleep(30)
+    time.sleep(15)
     while True:
         try:
-            scheduler_logger.info("[AUTO FOLLOWUP] Running scheduled follow-up evaluation...")
+            scheduler_logger.info("[AUTO FOLLOWUP] Evaluating 4-stage follow-up schedule (Day 3, 5, 7, 10)...")
             engine = FollowupEngine(db=db)
             results = engine.evaluate_and_process_followups(force=False)
 
             if results:
                 scheduler_logger.info(f"[AUTO FOLLOWUP] {len(results)} follow-ups generated.")
                 if not config.DRY_RUN:
-                    # LIVE MODE: auto-dispatch generated follow-ups via email & WhatsApp
                     from outreach.email_sender import send_approved_emails
                     from outreach.whatsapp_sender import send_approved_whatsapp_messages
+                    from outreach.whatsapp_web_sender import send_whatsapp_message_automated, is_whatsapp_web_logged_in
+                    
                     for item in results:
                         lead = db.get_lead_by_id(item["lead_id"])
                         if lead:
+                            # 1. Auto Dispatch Email
                             e_res = send_approved_emails(leads=[lead], db=db)
-                            w_res = send_approved_whatsapp_messages(leads=[lead], db=db)
-                            scheduler_logger.info(
-                                f"[AUTO FOLLOWUP][LIVE] Follow-up #{lead.followup_count} dispatched for "
-                                f"'{lead.business_name}' ({len(e_res)} email, {len(w_res)} WA)."
-                            )
+                            
+                            # 2. Auto Dispatch WhatsApp (Automated background browser)
+                            if is_whatsapp_web_logged_in() and lead.phone:
+                                wa_res = send_whatsapp_message_automated(phone=lead.phone, message=lead.whatsapp_message)
+                                scheduler_logger.info(
+                                    f"[AUTO FOLLOWUP][LIVE] Follow-up #{lead.followup_count} dispatched via WhatsApp Web "
+                                    f"for '{lead.business_name}': {wa_res.get('status')}"
+                                )
+                            else:
+                                w_res = send_approved_whatsapp_messages(leads=[lead], db=db)
+                                scheduler_logger.info(
+                                    f"[AUTO FOLLOWUP][LIVE] Follow-up #{lead.followup_count} dispatched via Meta API "
+                                    f"for '{lead.business_name}' ({len(e_res)} email, {len(w_res)} WA)."
+                                )
                 else:
-                    scheduler_logger.info("[AUTO FOLLOWUP][DRY RUN] Follow-ups generated (not dispatched).")
+                    scheduler_logger.info("[AUTO FOLLOWUP][DRY RUN] Follow-ups generated (not dispatched in Dry Run).")
             else:
                 scheduler_logger.info("[AUTO FOLLOWUP] No leads currently due for follow-ups.")
 
@@ -640,7 +752,7 @@ def _auto_followup_scheduler():
             import logging
             logging.getLogger("AutoFollowupScheduler").error(f"[AUTO FOLLOWUP] Scheduler error: {ex}")
 
-        # Sleep 4 hours before next check
+        # Check every 4 hours
         time.sleep(4 * 60 * 60)
 
 

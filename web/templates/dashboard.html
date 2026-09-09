@@ -1144,6 +1144,9 @@
         </div>
 
         <div class="header-right">
+            <button id="btn-wa-link" class="mode-switch-btn inactive" onclick="linkWhatsAppWeb()" style="border: 1px solid rgba(37, 211, 102, 0.4); color: #25d366; display: flex; align-items: center; gap: 0.35rem; padding: 0.4rem 0.85rem; border-radius: 9999px; cursor: pointer;" title="Link WhatsApp Web once to enable automated Day 3, 5, 7, 10 follow-ups">
+                💬 <span id="wa-link-text">Link WhatsApp Web</span>
+            </button>
             <div class="mode-switch-group">
                 <button id="btn-mode-dry" class="mode-switch-btn {% if config.DRY_RUN %}active-dry{% else %}inactive{% endif %}" onclick="setSystemMode('dry')" title="Switch to DRY RUN safety mode">
                     🛡️ DRY RUN
@@ -1797,6 +1800,50 @@
         </div>
     </div>
 
+    <!-- WHATSAPP QR CODE LINKING MODAL -->
+    <div class="modal-overlay" id="modal-whatsapp-qr" style="display: none; align-items: center; justify-content: center; z-index: 10000;">
+        <div class="modal-card" style="max-width: 440px; text-align: center; background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(20px); border: 1px solid rgba(37, 211, 102, 0.3); border-radius: 16px; padding: 1.5rem;">
+            <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.8rem;">
+                <div class="modal-title" style="display: flex; align-items: center; gap: 0.5rem; color: #25d366; font-size: 1.1rem; font-weight: 700;">
+                    💬 WhatsApp Web Session
+                </div>
+                <button class="btn-close" onclick="closeWhatsAppQrModal()" style="background: none; border: none; color: var(--text-muted); font-size: 1.5rem; cursor: pointer;">&times;</button>
+            </div>
+            
+            <!-- VIEW 1: QR SCANNER (When unlinked) -->
+            <div id="wa-scanner-view">
+                <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1.2rem; line-height: 1.4;">
+                    Open WhatsApp on your phone → <strong>Linked Devices</strong> → <strong>Link a Device</strong> and scan this code:
+                </p>
+
+                <div id="wa-qr-box" style="background: white; padding: 16px; border-radius: 12px; display: inline-flex; align-items: center; justify-content: center; min-width: 260px; min-height: 260px; margin: 0 auto; box-shadow: 0 12px 40px rgba(0,0,0,0.6);">
+                    <div id="wa-qr-loader" style="color: #0f172a; font-size: 0.88rem; font-weight: 600; display: flex; flex-direction: column; align-items: center; gap: 0.75rem;">
+                        <div style="width: 36px; height: 36px; border: 3px solid #cbd5e1; border-top-color: #25d366; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+                        <span id="wa-qr-loader-text">Generating live QR code...</span>
+                    </div>
+                    <img id="wa-qr-img" src="" alt="WhatsApp QR Code" style="display: none; max-width: 250px; border-radius: 8px;">
+                </div>
+
+                <div id="wa-qr-status" style="margin-top: 1.2rem; font-size: 0.85rem; color: #94a3b8; font-weight: 500;">
+                    ⏳ Waiting for scan...
+                </div>
+            </div>
+
+            <!-- VIEW 2: ALREADY LINKED (When authenticated) -->
+            <div id="wa-linked-view" style="display: none; padding: 1rem 0;">
+                <div style="font-size: 3.5rem; margin-bottom: 0.5rem; line-height: 1;">✅</div>
+                <h3 style="color: #22c55e; font-size: 1.2rem; font-weight: 700; margin-bottom: 0.5rem;">WhatsApp Web Connected</h3>
+                <p style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.5; margin-bottom: 1.5rem;">
+                    Your WhatsApp session is active and verified. Automated follow-ups (Day 3, 5, 7, 10) will be dispatched directly through this session.
+                </p>
+                <div style="display: flex; gap: 0.75rem; justify-content: center;">
+                    <button class="btn-cancel" onclick="closeWhatsAppQrModal()" style="padding: 0.45rem 1.2rem; border-radius: 8px; font-size: 0.85rem;">Close</button>
+                    <button onclick="unlinkWhatsAppWeb()" style="background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.4); color: #ef4444; padding: 0.45rem 1.2rem; border-radius: 8px; font-size: 0.85rem; cursor: pointer; font-weight: 600;">Unlink Session</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
         let currentLeadId = null;
 
@@ -1879,10 +1926,7 @@
             const name = lead.business_name || 'Business';
             const city = lead.city || 'your city';
             const slug = `${name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${city.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
-            let demoUrl = lead.demo_url || `https://abhishek8154.github.io/lead-magnet-ai/preview/${slug}.html`;
-            if (demoUrl.includes('trycloudflare.com') || demoUrl.includes('localhost:8000')) {
-                demoUrl = `https://abhishek8154.github.io/lead-magnet-ai/preview/${slug}.html`;
-            }
+            let demoUrl = lead.demo_url || `/preview/${slug}`;
             const ws = (lead.website_status || '').toUpperCase();
 
             let emailMsg = "";
@@ -2631,16 +2675,12 @@
                             friendlyErr = '❌ ' + rawErr.substring(0, 80) + (rawErr.length > 80 ? '...' : '');
                         }
 
-                        // Build WhatsApp Web 1-click URL
+                        // Build WhatsApp 1-click button with automatic status sync to SENT
                         let waWebBtn = '';
                         if (l.phone) {
-                            const rawPhone = l.phone.replace(/\D/g, '');
-                            const waPhone = rawPhone.startsWith('91') ? rawPhone : (rawPhone.length === 10 ? '91' + rawPhone : rawPhone);
-                            const waMsg = l.whatsapp_message || `Hi ${l.business_name}, we've built a free demo website for you. Check it here: ${l.demo_url || ''}`;
-                            const waUrl = `https://web.whatsapp.com/send?phone=${waPhone}&text=${encodeURIComponent(waMsg)}`;
-                            waWebBtn = `<a href="${waUrl}" target="_blank" style="display:inline-flex;align-items:center;gap:6px;background:linear-gradient(135deg,#25d366,#128c7e);color:#fff;font-size:0.78rem;font-weight:700;padding:0.4rem 0.75rem;border-radius:8px;text-decoration:none;border:none;cursor:pointer;margin-top:4px;">
+                            waWebBtn = `<button onclick='sendDirectWhatsApp(${JSON.stringify(l).replace(/'/g, "&apos;")})' style="display:inline-flex;align-items:center;gap:6px;background:linear-gradient(135deg,#25d366,#128c7e);color:#fff;font-size:0.78rem;font-weight:700;padding:0.4rem 0.75rem;border-radius:8px;border:none;cursor:pointer;margin-top:4px;">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.123.556 4.112 1.528 5.836L0 24l6.335-1.508A11.955 11.955 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-1.89 0-3.66-.497-5.194-1.367l-.372-.22-3.862.919.975-3.763-.242-.387A9.944 9.944 0 012 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>
-                                Send on WhatsApp</a>`;
+                                Send on WhatsApp</button>`;
                         }
 
                         return `
@@ -2691,6 +2731,43 @@
             }
         }
 
+        async function sendDirectWhatsApp(lead) {
+            if (!lead || !lead.phone) {
+                alert('No phone number available for this lead.');
+                return;
+            }
+            const rawPhone = lead.phone.replace(/\D/g, '');
+            const waPhone = rawPhone.startsWith('91') ? rawPhone : (rawPhone.length === 10 ? '91' + rawPhone : rawPhone);
+            const waMsg = lead.whatsapp_message || `Hi, I came across ${lead.business_name} — great reputation!\nI designed a modern website concept for you 👇\n${lead.demo_url || ''}\nTake a look & let me know 🙏`;
+            const waUrl = `https://api.whatsapp.com/send?phone=${waPhone}&text=${encodeURIComponent(waMsg)}`;
+
+            // 1. Open WhatsApp chat in new window
+            window.open(waUrl, '_blank');
+
+            // 2. Show confirmation dialog — only mark as SENT when user confirms
+            showToast(`💬 WhatsApp opened for ${lead.business_name}. Press Send in WhatsApp, then confirm below.`);
+
+            // Wait 3 seconds for user to switch to WhatsApp, then show confirm
+            setTimeout(async () => {
+                const confirmed = confirm(`Did you press Send in WhatsApp for "${lead.business_name}"?\n\nClick OK to mark as Delivered.\nClick Cancel if you didn't send yet.`);
+                if (confirmed) {
+                    try {
+                        const res = await fetch(`/api/lead/${lead.lead_id}/mark-sent?channel=whatsapp`, { method: 'POST' });
+                        const resData = await res.json();
+                        if (resData.status === 'success') {
+                            showToast(`✅ ${lead.business_name} marked as Delivered!`);
+                            await loadOutreachTracker();
+                            if (typeof fetchStats === 'function') fetchStats();
+                        }
+                    } catch (e) {
+                        console.error('Error marking lead as sent:', e);
+                    }
+                } else {
+                    showToast(`⏸️ ${lead.business_name} NOT marked as sent. You can mark it later.`);
+                }
+            }, 3000);
+        }
+
         function filterTrackerSection(sec) {
             const secs = ['delivered', 'failed', 'dry_run'];
             secs.forEach(s => {
@@ -2706,6 +2783,147 @@
                 }
             });
         }
+
+        let waQrPollTimer = null;
+
+        function closeWhatsAppQrModal() {
+            const modal = document.getElementById('modal-whatsapp-qr');
+            if (modal) modal.style.display = 'none';
+            if (waQrPollTimer) {
+                clearInterval(waQrPollTimer);
+                waQrPollTimer = null;
+            }
+        }
+
+        async function linkWhatsAppWeb() {
+            const modal = document.getElementById('modal-whatsapp-qr');
+            const scannerView = document.getElementById('wa-scanner-view');
+            const linkedView = document.getElementById('wa-linked-view');
+            const img = document.getElementById('wa-qr-img');
+            const loader = document.getElementById('wa-qr-loader');
+            const loaderText = document.getElementById('wa-qr-loader-text');
+            const statusEl = document.getElementById('wa-qr-status');
+
+            const isLinked = await checkWhatsAppStatus();
+
+            if (isLinked) {
+                if (scannerView) scannerView.style.display = 'none';
+                if (linkedView) linkedView.style.display = 'block';
+                if (modal) modal.style.display = 'flex';
+                return;
+            }
+
+            if (scannerView) scannerView.style.display = 'block';
+            if (linkedView) linkedView.style.display = 'none';
+            if (modal) modal.style.display = 'flex';
+            if (img) img.style.display = 'none';
+            if (loader) loader.style.display = 'flex';
+            if (loaderText) loaderText.innerText = "Initializing live QR generator...";
+            if (statusEl) statusEl.innerHTML = "⏳ Connecting to WhatsApp Web...";
+
+            try {
+                // Trigger background QR session
+                await fetch('/api/whatsapp/link', { method: 'POST' });
+
+                if (waQrPollTimer) clearInterval(waQrPollTimer);
+
+                // Poll every 1.5s for live QR image / auth status
+                let pollCount = 0;
+                waQrPollTimer = setInterval(async () => {
+                    pollCount++;
+                    try {
+                        const res = await fetch('/api/whatsapp/qr-status');
+                        const data = await res.json();
+
+                        if (data.status === 'AUTHENTICATED' || data.is_linked) {
+                            clearInterval(waQrPollTimer);
+                            waQrPollTimer = null;
+                            await checkWhatsAppStatus();
+                            if (scannerView) scannerView.style.display = 'none';
+                            if (linkedView) linkedView.style.display = 'block';
+                            setTimeout(() => {
+                                closeWhatsAppQrModal();
+                            }, 2500);
+                            return;
+                        }
+
+                        if (data.status === 'QR_READY' && data.image_base64) {
+                            if (loader) loader.style.display = 'none';
+                            if (img) {
+                                img.src = data.image_base64;
+                                img.style.display = 'block';
+                            }
+                            if (statusEl) statusEl.innerHTML = "📸 Scan the QR code above with your WhatsApp app.";
+                        } else if (data.status === 'LOADING') {
+                            if (loaderText) loaderText.innerText = data.message || "Generating QR code...";
+                        } else if (data.status === 'ERROR') {
+                            clearInterval(waQrPollTimer);
+                            waQrPollTimer = null;
+                            if (loader) loader.style.display = 'none';
+                            if (statusEl) statusEl.innerHTML = `<span style='color:#ef4444;'>❌ ${data.message || 'Error generating QR code. Please try again.'}</span>`;
+                        } else if (data.status === 'TIMEOUT' || pollCount > 60) {
+                            clearInterval(waQrPollTimer);
+                            waQrPollTimer = null;
+                            if (loader) loader.style.display = 'none';
+                            if (statusEl) statusEl.innerHTML = "<span style='color:#ef4444;'>⚠️ QR timed out. Close and click Link again.</span>";
+                        }
+                    } catch (err) {
+                        console.error("QR poll error:", err);
+                    }
+                }, 1500);
+
+            } catch (e) {
+                alert("Failed to start WhatsApp Web QR session: " + e);
+            }
+        }
+
+        async function unlinkWhatsAppWeb() {
+            if (!confirm("Are you sure you want to unlink WhatsApp Web? You will need to scan QR again to re-link.")) {
+                return;
+            }
+            try {
+                const res = await fetch('/api/whatsapp/unlink', { method: 'POST' });
+                const data = await res.json();
+                await checkWhatsAppStatus();
+                closeWhatsAppQrModal();
+                alert(data.message || "WhatsApp Web unlinked.");
+            } catch (e) {
+                alert("Error unlinking WhatsApp: " + e);
+            }
+        }
+
+        async function checkWhatsAppStatus() {
+            try {
+                const res = await fetch('/api/whatsapp/status');
+                const data = await res.json();
+                const btn = document.getElementById('btn-wa-link');
+                const text = document.getElementById('wa-link-text');
+                if (data && data.is_linked) {
+                    if (btn) {
+                        btn.className = "mode-switch-btn active-live";
+                        btn.style.borderColor = "rgba(37, 211, 102, 0.8)";
+                        btn.style.background = "rgba(37, 211, 102, 0.15)";
+                    }
+                    if (text) text.innerText = "WhatsApp: Linked ✅";
+                    return true;
+                } else {
+                    if (btn) {
+                        btn.className = "mode-switch-btn inactive";
+                        btn.style.borderColor = "rgba(37, 211, 102, 0.4)";
+                        btn.style.background = "transparent";
+                    }
+                    if (text) text.innerText = "Link WhatsApp Web";
+                    return false;
+                }
+            } catch (e) {
+                return false;
+            }
+        }
+
+        // Check status on load
+        document.addEventListener('DOMContentLoaded', () => {
+            checkWhatsAppStatus();
+        });
     </script>
 </body>
 </html>
