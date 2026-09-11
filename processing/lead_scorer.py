@@ -147,12 +147,9 @@ def score_and_qualify_leads(
         lead.lead_tier = tier
         lead.qualification_reason = reason_str
 
-        # Update status to QUALIFIED for HOT & WARM leads
-        if tier in ("HOT", "WARM"):
-            lead.status = LeadStatus.QUALIFIED.value
-            logger.info(f"[QUALIFIED {tier}] '{lead.business_name}' | Score: {score} | Reasons: {reason_str}")
-        else:
-            logger.info(f"[LOW TIER] '{lead.business_name}' | Score: {score} | Saved in DB, status unchanged.")
+        # Advance all scored leads to QUALIFIED status
+        lead.status = LeadStatus.QUALIFIED.value
+        logger.info(f"[QUALIFIED {tier}] '{lead.business_name}' | Score: {score} | Reasons: {reason_str}")
 
         db.upsert_lead(lead)
 

@@ -274,7 +274,7 @@ class Database:
         stage_map = {
             "WEBSITE_CHECK": "SELECT * FROM leads WHERE status IN ('DISCOVERED', 'ENRICHED');",
             "SCORING": "SELECT * FROM leads WHERE status = 'VERIFIED';",
-            "PERSONALIZATION": "SELECT * FROM leads WHERE status = 'QUALIFIED' AND lead_tier IN ('HOT', 'WARM');",
+            "PERSONALIZATION": "SELECT * FROM leads WHERE status = 'QUALIFIED';",
             "DEMO_URL": "SELECT * FROM leads WHERE status = 'PERSONALIZED';",
             "APPROVAL_QUEUE": "SELECT * FROM leads WHERE status = 'DEMO_READY' AND demo_status = 'READY';",
             "OUTREACH": "SELECT * FROM leads WHERE approval_status = 'APPROVED' AND (email_status != 'SENT' OR whatsapp_status != 'SENT');"

@@ -96,8 +96,8 @@ def run_pipeline(city: str, business_type: str, max_leads: int, interactive: boo
     except Exception as e:
         log_error(e, module_name="ScoringStage")
 
-    # Stage 5: AI Personalization (HOT and WARM leads only)
-    logger.info("--- Stage 5/10: AI Personalization ---")
+    # Stage 5: AI Personalization & Outreach Generation
+    logger.info("--- Stage 5/10: AI Personalization & Outreach Generation ---")
     try:
         unprocessed_ai = db.get_unprocessed_leads_for_stage("PERSONALIZATION")
         unprocessed_ai_city = [l for l in unprocessed_ai if l.city and l.city.lower() == city.lower()]

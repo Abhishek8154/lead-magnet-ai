@@ -194,9 +194,9 @@ Return ONLY a valid JSON object with keys: "email_subject", "email_body", "whats
 """
 
     try:
-        client = anthropic.Anthropic(api_key=api_key)
-        # Try claude-sonnet-4-6 or fallback model string
-        model_name = "claude-sonnet-4-6"
+        client = anthropic.Anthropic(api_key=api_key, timeout=12.0)
+        # Try claude-3-7-sonnet or claude-3-5-sonnet model
+        model_name = "claude-3-7-sonnet-20250219"
         
         try:
             response = client.messages.create(
@@ -239,8 +239,8 @@ def personalize_qualified_leads(
     delay_seconds: float = 0.5
 ) -> List[Dict[str, Any]]:
     """
-    Processes leads with status QUALIFIED (HOT or WARM tier only).
-    Generates cold email and WhatsApp messages using Claude / Anthropic SDK.
+    Processes leads with status QUALIFIED.
+    Generates cold email and WhatsApp messages using Claude / Anthropic SDK (or structured fallback).
     Saves email_message and whatsapp_message to SQLite DB and sets status to PERSONALIZED.
     """
     if db is None:
@@ -251,11 +251,11 @@ def personalize_qualified_leads(
         all_leads = db.get_all_leads()
         leads = [
             l for l in all_leads
-            if not l.email_message or not l.whatsapp_message or l.email_message == ""
+            if l.status == LeadStatus.QUALIFIED.value or not l.email_message or not l.whatsapp_message or l.email_message == ""
         ]
 
     if not leads:
-        logger.info("No QUALIFIED (HOT/WARM) leads found for personalization.")
+        logger.info("No QUALIFIED leads found for personalization.")
         return []
 
     logger.info(f"Starting AI personalization for {len(leads)} QUALIFIED leads...")
@@ -264,7 +264,11 @@ def personalize_qualified_leads(
     for idx, lead in enumerate(leads, 1):
         logger.info(f"[{idx}/{len(leads)}] Generating AI messages for '{lead.business_name}' (Tier: {lead.lead_tier}, WS: {lead.website_status})...")
 
-        msg_data = call_anthropic_api(lead)
+        # Use Claude for HOT/WARM tier and fallback generator for LOW tier
+        if lead.lead_tier in ("HOT", "WARM"):
+            msg_data = call_anthropic_api(lead)
+        else:
+            msg_data = generate_fallback_messages(lead)
 
         full_email_message = f"Subject: {msg_data['email_subject']}\n\n{msg_data['email_body']}"
         full_wa_message = msg_data['whatsapp_message']
@@ -288,7 +292,6 @@ def personalize_qualified_leads(
         lead.whatsapp_message = full_wa_message
         lead.status = LeadStatus.PERSONALIZED.value
 
-
         db.upsert_lead(lead)
         logger.info(f"Successfully generated messages & updated status to PERSONALIZED for '{lead.business_name}'.")
 
@@ -303,8 +306,8 @@ def personalize_qualified_leads(
             "status": lead.status
         })
 
-        # Add 0.5s delay between calls
-        if idx < len(leads):
+        # Add 0.5s delay between calls for API requests
+        if idx < len(leads) and lead.lead_tier in ("HOT", "WARM"):
             time.sleep(delay_seconds)
 
     logger.info("AI personalization completed.")

@@ -191,7 +191,8 @@ def verify_website(url: str, business_name: str) -> str:
 def verify_leads_websites(
     batch_size: int = 5,
     db: Optional[Database] = None,
-    delay_seconds: float = 1.0
+    delay_seconds: float = 1.0,
+    leads: Optional[List[Lead]] = None
 ) -> List[Dict[str, Any]]:
     """
     Checks websites for leads with status DISCOVERED or ENRICHED in batches of size batch_size.
@@ -202,12 +203,14 @@ def verify_leads_websites(
         db = Database()
         db.init_db()
 
-    all_leads = db.get_all_leads()
-    # Filter target leads with status DISCOVERED or ENRICHED
-    target_leads = [
-        l for l in all_leads
-        if l.status in (LeadStatus.DISCOVERED.value, LeadStatus.ENRICHED.value)
-    ][:batch_size]
+    if leads is not None:
+        target_leads = leads[:batch_size]
+    else:
+        all_leads = db.get_all_leads()
+        target_leads = [
+            l for l in all_leads
+            if l.status in (LeadStatus.DISCOVERED.value, LeadStatus.ENRICHED.value)
+        ][:batch_size]
 
     if not target_leads:
         logger.info("No leads with status DISCOVERED or ENRICHED found for website verification.")

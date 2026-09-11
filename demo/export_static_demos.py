@@ -103,6 +103,13 @@ def export_and_publish_demos_to_github(leads: Optional[List[Lead]] = None):
     def _bg_push():
         try:
             logger.info("Auto-syncing newly generated client demo pages to GitHub...")
+            # Clean any stale lock file
+            lock_file = PROJECT_ROOT / ".git" / "index.lock"
+            if lock_file.exists():
+                try:
+                    lock_file.unlink()
+                except Exception:
+                    pass
             subprocess.run(["git", "add", "docs", "public", "public_demos"], cwd=str(PROJECT_ROOT), check=True, capture_output=True)
             commit_res = subprocess.run(["git", "commit", "-m", "Auto-publish new client demo websites to GitHub Pages"], cwd=str(PROJECT_ROOT), capture_output=True)
             if commit_res.returncode == 0:
